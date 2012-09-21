@@ -1,0 +1,258 @@
+#+TITLE: Global organization of results and source files for LSST CCD testing
+#+AUTHOR: Brett Viren
+#+EMAIL: bv@bnl.gov
+#+DATE: \today
+
+#+LATEX_HEADER: \usepackage{hyperref}
+#+LATEX_HEADER: \hypersetup{
+#+LATEX_HEADER:   hyperindex=true,
+#+LATEX_HEADER:   plainpages=false,
+#+LATEX_HEADER:   colorlinks=true,
+#+LATEX_HEADER:   linkcolor=black
+#+LATEX_HEADER: }
+
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+#+LINK_UP:
+#+LINK_HOME:
+#+XSLT:
+
+#+BEGIN_ABSTRACT
+This note describes the organization of LSST CCD test result files and
+the run-time environment in which software that implements a station
+or an analysis (collectively, a "test") must expect.  This note is
+written to guide test software developers.  Some details of
+implementation are omitted.
+#+END_ABSTRACT
+
+* Locating Input/Output Files
+
+Production runs of a test software job execute from a well defined
+environment.  This environment is setup[fn:modules] and the job is run
+via the /job harness/.  
+The environment defines general and specific,
+per-job variables that the test software must use in order to locate
+input and output files.
+
+** Test Software Output Directory
+
+The test software must place all of its output files under the
+directory defined by the environment variable:
+
+#+begin_src sh
+$CCDTEST_OUTPUT_DIR
+#+end_src
+
+A job will be started inside this directory and it must not produce
+any files outside of this directory.  Any files or sub-directories
+that are produced should be named consistently from job to job.  In
+particular, names should not encode specifics about the job such
+as CCD ID or date or time stamps.
+
+** Inter-test Dependencies 
+
+Some test software will require as input the results from other test
+jobs that have run previously.  The location of these files are
+specified external to the job and are communicated to the job through
+environment variables of the form:
+
+#+begin_src sh
+$CCDTEST_<NAME>_DIR
+#+end_src
+
+Where =<NAME>= is replaced by the (capitalized) canonical name of the
+test software that produced it.  The test software relies on a static
+naming convention for locating files or sub-directories at this
+location.
+
+* Software Installation Environment
+
+Test software is installed by the software manager given a git commit
+identifier (tag or SHA1 hash) by the software developer.  The
+installation is described by the environment variables:
+
+ - =$CCDTEST_<NAME>_HOME= :: locates the installation directory of the software.
+
+ - =$CCDTEST_<NAME>_GIT_TAG= :: the git tag of the software release
+
+ - =$CCDTEST_<NAME>_GIT_HASH= :: the git SHA1 hash of the software release
+
+In addition variables like =$PATH= will be suitably modified.
+
+
+* Job-specific environment
+
+Some standard environment variables are defined on a per-job basis:
+
+ - =$CCDTEST_CCD_ID= :: the ID string for the CCD being tested.
+
+ - =$CCDTEST_NAME= :: the canonical name of the test.
+
+ - =$CCDTEST_STAMP= :: the time stamp for which the test results will
+      be recorded.
+
+** Special environment
+
+Additional environment may be provided to the job.  This can consist
+of information derived from the environment or as a means for passing
+in input parameters.  The test software development should communicate
+with the software manager what is required.
+
+* File System Details
+
+The test software jobs should not assume any understanding of the
+details of the file system organization except as specified by the
+environment described above or in test-specific static naming
+conventions.
+
+That said, the file system is organized to achieve:
+
+ - portability to different sites,
+
+ - unique location for each production run of each test,
+
+ - convenient browsing,
+
+ - self-documented discovery of its contents and
+
+ - copying of select sub-hierarchies.
+
+** File System Root
+
+The file system holding the results from all test software has a
+single root.  This root will likely differ from site to site but the
+structure below it must be identical between sites and as described
+here.  The test software must not make reference to file system paths
+outside this root.  This root is defined by the environment variable:
+
+#+begin_src sh
+$CCDTEST_ROOT
+#+end_src
+
+While this variable is exposed to the jobs the test software should
+rely on specific variables (described below) to locate files. 
+
+** Output Directory
+
+The path to a location containing result files (ie,
+=$CCDTEST_OUTPUT_DIR= or =$CCDTEST_<NAME>_DIR=) is constructed from
+sub-directories named, in order, by these elements:
+
+ 1. =<CCD_ID>= the identifier for the CCD tested.
+
+ 2. =<NAME>= the canonical name for the test.
+
+ 3. =<STAMP>= a time stamp indicating when the test was run.
+
+A general output path would then be:
+
+#+begin_src sh
+CCDTEST_<NAME>_DIR=$CCDTEST_ROOT/<CCD_ID>/<NAME>/<STAMP>/
+#+end_src
+
+It is noted that the values ofr these individual elements are exposed
+to the job as described above.
+
+
+[fn:modules] Environment is managed by Modules (http://modules.sf.net)
+or similar.
+
+* Environment and File System Specification
+
+Production runs of the test software execute from a well defined
+environment.  This environment is setup and the job is run via the job
+harness.  The environment defines general and specific, per-job
+variables that must be used to locate files.
+
+** File System Root
+
+The file system holding the results from all test software has a
+single root.  This root will likely differ from site to site but the
+structure below it must be identical between sites and as described
+here.  This root is defined by the environment variable:
+
+#+begin_src sh
+$CCDTEST_ROOT
+#+end_src
+
+While this variable is exposed to the jobs the test software should
+rely on specific variables (described below) to locate files.
+
+** Test Software Output Directory
+
+The test software must place all output files under the directory
+defined by the environment variable:
+
+#+begin_src sh
+$CCDTEST_OUTPUT_DIR
+#+end_src
+
+A job should not produce any files outside of this directory.
+
+** Inter-test Dependencies 
+
+Some test software will require the results from other test jobs that
+have run previously.  The dependency on these files are specified
+external to the job and are communicated to the job through
+environment variables of the form:
+
+#+begin_src sh
+$CCDTEST_<NAME>_DIR
+#+end_src
+
+Where =<NAME>= is replaced by the canonical name of the test software
+that produced it.  
+
+* File System Organization
+
+The test software jobs should not assume any understanding of the
+details of the file system organization except the
+=$CCDTEST_OUTPUT_DIR= and =$CCDTEST_<NAME>_DIR= variables described
+above.  That said, the file system is organized to allow for
+convenient browsing and self documenting discovery of its contents.
+
+The path to an output directory under =$CCDTEST_ROOT= is constructed
+from these elements:
+
+ - =<CCD_ID>= :: the identifier for the CCD tested.
+
+ - =<NAME>= :: the canonical name for the test.
+
+ - =<STAMP>= :: a time stamp indicating when the test was run.
+
+
+* Location of Test Software
+
+The test software is run by the job harness which sets the job's
+environment[fn:modules].  This environment must provide all run-time
+environment that the job needs including the variables described above
+and in this section.  Test software and job harness authors must
+coordinate on this issue.
+
+** General Environment
+
+The test software can rely on the following environment variables:
+
+ - =$CCDTEST_<NAME>_HOME= :: the directory where the software has been installed.
+
+ - =$CCDTEST_<NAME>_GIT_TAG= :: the =git= commit tag 
+
+ - =$CCDTEST_<NAME>_GIT_HASH= :: the =git= commit SHA1 hash
+
+** Specific Environment
+
+Each test software may require additional environment either derived
+from the variables described in this note or in order to specify job
+input parameters.  They will be set in this same manner.
+
+
+
+
+
+[fn:modules] Environment management will be implemented by Modules (http://modules.sf.net/) or similar.

@@ -27,12 +27,14 @@ def test_complete():
     '''
     Make a complete config object
     '''    
-    c = config.Config("test_config","v0.0")
+    c = config.Config("test_config",version="v0.0")
     for req in c.required_parameters:
         if req in ['name','version']: continue
         c.set(req,"foo")
     assert c.complete(), 'Complete config object says it is not'
-    assert str(c) == 'Config: "test_config" (v0.0)'
+    print c
+    assert str(c) == 'Config: "test_config" (complete) v0.0'
+    assert c.archive_rsync_path() == 'foo@foo:foo'
 
 if __name__ == '__main__':
     

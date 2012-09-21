@@ -4,6 +4,7 @@ LSST CCD Acceptance Testing Running of Jobs
 
 '''
 
+import os
 import remote, environment
 
 
@@ -37,28 +38,32 @@ class Job(object):
         self.cfg = cfg
         em = environment.Modules()
         em.guess_setup()
-        self.env = em.load(cfg.name,cfg.version)
+        em.load(cfg.name,cfg.version)
+        self.env = em.env
         return
-
-        
 
     def archive_exists(self):
         '''
         Return True if archive directory exists.
         '''
-        s,o,e = remote.stat(path)
+        s,o,e = remote.stat(self.cfg.subdir('archive'),
+                            self.cfg.archive_host,
+                            self.cfg.archive_user)
         if s: return False
         o = o.strip()
         if not o: return False
         return True
 
+    def run(self):
+        '''
+        Run the main process
+        '''
 
+        return
 
-def path(root, ccd_id, test_name, job_id):
-    '''
-    Return a path into the archive locating the given results.
+    def validate(self):
+        '''
+        Run the validation process, return the path to the metadata file.
+        '''
+        return
 
-    This trivial function defines the pattern of the archive file
-    system layout.
-    '''
-    return '/'.join([str(x) for x in [root, ccd_id, test_name, job_id]])

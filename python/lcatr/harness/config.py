@@ -22,6 +22,10 @@ class Config(object):
     Encapsulates and builds the configuration for a job.
     '''
 
+    # Policy definition of the layout of a result's output relative to
+    # ccdtest_root:
+    subdir_policy = '%(ccd_id)s/%(name)s/%(version)s/%(job_id)s'
+
     # places to look for RC files.
     default_config_files = [
         '~/.lcatr.cfg',
@@ -45,10 +49,9 @@ class Config(object):
 
         ]
 
-    def __init__(self, name, version = "default", filename = None, **kwds):
+    def __init__(self, name, filename = None, **kwds):
         
         self.name = name
-        self.version = version
 
         # sane defaults
         self.operator = os.environ.get('USER')
@@ -117,8 +120,28 @@ class Config(object):
         return
 
     def __str__(self):
-        return 'Config: "%s" (%s)' % (self.name, self.version)
+        comp = "incomplete"
+        if self.complete(): comp = "complete"
+        ver = self.__dict__.get('version',"")
+        return 'Config: "%s" (%s) %s' % (self.name, comp, ver)
 
-    # fixme: add function to load from config file
+    def subdir(self, prefix=None):
+        '''
+        Construct and return the subdir relative to CCDTEST_ROOT.
+        '''
+        if prefix == 'archive': prefix = self.archive_root + '/'
+        if prefix == 'local':   prefix = self.local_root + '/'
+        if not prefix:          prefix = ''
+        s = Config.subdir_policy % self.__dict__
+        return prefix + s
+
+
+    def archive_rsync_path(self):
+        '''
+        Return an rsync'able path for the remote archive CCDTEST_ROOT
+        '''
+        s = '%(archive_user)s@%(archive_host)s:%(archive_root)s' % self.__dict__
+        return s
+
     pass
 
