@@ -4,7 +4,8 @@ LSST CCD Acceptance Testing Running of Jobs
 
 '''
 
-import remote
+import remote, environment
+
 
 class Job(object):
     '''
@@ -31,9 +32,15 @@ class Job(object):
         Create a test job.
         '''
         if not cfg.complete():
-            raise ValueError,'Given incomplete configuration.'
+            raise ValueError,'Given incomplete configuration, missing: %s' % \
+                cfg.missing()
         self.cfg = cfg
+        em = environment.Modules()
+        em.guess_setup()
+        self.env = em.load(cfg.name,cfg.version)
         return
+
+        
 
     def archive_exists(self):
         '''

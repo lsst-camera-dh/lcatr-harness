@@ -12,6 +12,7 @@ def test_create():
 
     global em
     em = environment.Modules()
+    em.guess_setup()
     return
 
 def test_load():
@@ -29,6 +30,7 @@ def test_unload():
 def test_dump():
 
     for k,v in em.env.iteritems():
+        if 'MOD' not in k: continue
         print '%s = %s' % (k,v)
         continue
     return
@@ -37,4 +39,4 @@ if __name__ == '__main__':
     test_create()
     test_load()
     test_unload()
-    #test_dump()
+    test_dump()

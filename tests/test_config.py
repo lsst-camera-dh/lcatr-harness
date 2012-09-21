@@ -3,14 +3,23 @@
 Test the lcatr.harness.config module
 '''
 
+import os
 from lcatr.harness import config
+
+def test_dump():
+    cfgfile = os.path.join(os.path.dirname(__file__), 'lcatr.cfg')
+    c = config.Config(name="test_config", site='TESTSITE', filename = cfgfile)
+    for k,v in sorted(c.__dict__.iteritems()):
+        if k[0] == '_': continue
+        print '\t%s = %s' % (k,v)
+
 
 def test_incomplete():
     '''
     Make an incomplete config object
     '''
 
-    c = config.Config(name="test_config",version="v0.0")
+    c = config.Config(name="test_config")
     assert not c.complete(), 'Incomplete config object says it is complete'
     
 
@@ -27,5 +36,6 @@ def test_complete():
 
 if __name__ == '__main__':
     
+    test_dump()
     test_incomplete()
     test_complete()

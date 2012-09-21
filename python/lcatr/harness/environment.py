@@ -8,43 +8,50 @@ import re
 import subprocess
 from glob import glob
 
+guessed_bases = [
+    '/opt/lsst/SL53/Modules/[0-9]*',
+    '$HOME/opt/modules/Modules/[0-9]*',
+    '/usr/share/modules/Modules/[0-9]*',
+]
+
+def guess_modules_thing(thing, bases = guessed_bases):
+    for base in bases:
+        path = os.path.join(base,thing)
+        path = os.path.expandvars(path)
+        paths = glob(path)
+        if not paths: 
+            continue
+        paths.sort()
+        return paths[-1]
+    return None
+
 def guess_modules_home():
     '''
-    Try to find where modules are installed.  If successful return a tuple:
-
-    (modcmd,modhome,modver)
-
-    Or None if we fail to find it.
+    Try to guess a value for MODULESHOME
     '''
-
     mh = os.environ.get('MODULESHOME')
-    mv = os.environ.get('MODULE_VERSION')
-    if mh and mv: 
-        return (os.path.join(mh,'bin/modulecmd'),mh,mv)
+    if mh: return mh
 
-    # Debian system installation
-    if os.path.exists('/etc/debian_version') and os.path.exists('/usr/bin/modulecmd'):
-        vers = glob('/usr/share/modules/Modules/*')
-        vers.sort()
-        ver = os.path.basename(vers[-1])
-        return ('/usr/bin/modulecmd', '/usr/share/modules', ver)
-
-    # go fishing
-    maybe = [
-        '/opt/lsst/SL53/Modules/*/init', # RACF astro cluster
-        '$HOME/opt/modules/Modules/*/init', # 
-        ]
-    inits = reduce(lambda x,y:x+y, [glob(os.path.expandvars(p%'init')) for p in maybe])
-    if not inits: return None
+    got = guess_modules_thing('init')
+    if not got: return None
+    return os.path.dirname(got)
+        
+def guess_modules_cmd():
+    '''
+    Try to guess where the modulecmd program is
+    '''
+    trial = []
+    mh = os.environ.get('MODULESHOME')
+    if mh: trial.append(os.path.join(mh,'bin/modulecmd'))
+    trial += guessed_bases
+    return guess_modules_thing('bin/modulecmd', trial)
     
-    for initdir in inits:
-        verdir = os.path.dirname(initdir)
-        ver = os.path.basename(verdir)
-        modcmd = os.path.join(verdir,'bin/modulecmd')
-        if not os.path.exists(modcmd):
-            continue
-        return (modcmd, verdir, ver)
-    return None
+def guess_modules_version():
+    mv = os.environ.get('MODULE_VERSION')
+    if mv: return mv
+    got = guess_modules_thing('')
+    if not got: return None
+    return os.path.basename(got)
 
 def module_name(test_name, test_version = ""):
     '''
@@ -62,22 +69,82 @@ class Modules(object):
         '''
         Make interface to environment modules.
 
-        env provides dictionary of initial environment, else os.environ is used
+        The given env provides dictionary of initial environment, else
+        os.environ is used.
 
         The resulting object maintaines a .env dictionary of
         environment variables.  Subsequent functions modify it.
+
+        By default it is assumed that the environment needed to run
+        modules itself has been defined externally.  See the setup()
+        method if this is not to be the case.
+        '''
+        self.env = {}
+        if env: self.env.update(env)
+        else:   self.env.update(os.environ)
+        return
+
+    def guess_setup(self):
+        '''
+        Use the guess functions defined in this module to set up the
+        environment for modules itself.  Raise RuntimeError if failed.
+        '''
+        home = guess_modules_home()
+        if not home: raise RuntimeError, 'No modules home guessed'
+
+        modcmd = guess_modules_cmd()
+        if not modcmd: raise RuntimeError, 'No modules command guessed'
+
+        version = guess_modules_version()
+        if not version: raise RuntimeError, 'No modules version guessed'
+
+        self.setup(home, modcmd, version)
+        return
+
+    def setup(self, home, cmd = None, version = None):
+        '''
+        Setup environment needed to run modules itself.
+
+        In a source install it is enough to specify the "home" which
+        contains both the init/ sub directory and bin/modulecmd.  This
+        is the expected value for $MODULESHOME.  Some installations
+        may place the modulecmd in a different directory.  If the
+        version is not specified, it is assumed that the leaf
+        directory of home gives the version
+
+        The version found is returned or None on failure.
+
+        See also the guess_module_*() functions provided here.
         '''
 
-        mod_chv = guess_modules_home()
-        if not mod_chv:
-            raise RuntimeError,'Failed to find modules home.'
+        if not os.path.exists(home):
+            return None
 
-        modcmd,modhome,modver = mod_chv
-        self.cmdstr = modcmd
+        if not cmd: 
+            cmd = os.path.join(home,'bin/modulecmd')
+        if not os.path.exists(cmd):
+            return None
+
+        if version is None:
+            version = os.path.basename(home)
+
+        self.cmdstr = cmd
+
+        self.env.update({
+            'MODULESHOME': home,
+            'MODULE_VERSION': version,
+            'MODULE_VERSION_STACK': version,
+            'LOADEDMODULES': '',
+            })
+
+
+        # this is probably dangerous....
+        saved_environ = os.environ
+        os.environ = self.env
 
         modpath = []
         try:
-            fp = open(os.path.join(modhome, 'init/.modulespath'))
+            fp = open(os.path.join(home, 'init/.modulespath'))
         except IOError:
             pass
         else:
@@ -85,23 +152,16 @@ class Modules(object):
                 line = re.sub("#.*$", '', line)
                 line = line.strip()
                 if not line: continue
-                line = re.sub('\$MODULE_VERSION', modver, line)
+                line = os.path.expandvars(line)
                 modpath.append(line)
                 continue
             pass
 
-        self.env = {}
-        if env: self.env.update(env)
-        else:   self.env.update(os.environ)
+        os.environ = saved_environ
 
         # module.sf.net specific variables cribbed from init/* files
-        self.env.update({
-            'MODULESHOME': modhome,
-            'MODULE_VERSION': modver,
-            'MODULE_VERSION_STACK': modver,
-            'MODULEPATH': ':'.join(modpath),
-            'LOADEDMODULES': '',
-            })
+        self.env['MODULEPATH'] = ':'.join(modpath)
+
         return
 
     def command(self, flavor, *args):
