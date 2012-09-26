@@ -1,4 +1,4 @@
-#+TITLE: Describing LSST CCD Test Software Environment with Modules
+#+TITLE: Describing LSST Sensor Test Software Environment with Modules
 #+AUTHOR: Brett Viren
 #+EMAIL: bv@bnl.gov
 #+DATE: \today
@@ -93,11 +93,10 @@ corresponding to the Git tag used to make the release (and name the
 
 Any additional arguments are interpreted to be other packages under
 control of these /modulefiles/ which this /modulefile/ depends on.
-They should be specified with the form "=Name/Version=".  On package
-depends on another if it requires its code or it requires its output.
+They should be specified with the form "=Name/Version=".  
 
 The =lcatr_package= function is defined in a =util.tcl= file which can
-be located and sourced by the /modulefile/ with:
+be located and sourced by the /modulefile/ with these lines:
 
 #+begin_src tcl
 set base [file dirname [file dirname $ModulesCurrentModulefile]]
@@ -113,8 +112,7 @@ are defined by this package.
 * Environment determined by =lcatr_package=
 
 The call to the =lcatr_package= function will produce these
-environment variables.  Some are based on implicitly defined (by the
-job harness, see below) environment variables
+environment variables. 
 
  - =CCDTEST_NAME= :: the name of the package, taken from the directory
    part of the /modulefile/.
@@ -122,8 +120,8 @@ job harness, see below) environment variables
  - =CCDTEST_VERSION= :: the version of the package, taken from the name
    of the /modulefile/
 
-- =CCDTEST_DEPS= :: a colon-separated, ordered list of =<pkg>/<ver>=
-                    pairs of the dependencies passed to =lcatr_package=.
+- =CCDTEST_LACTR_PKGS= :: a colon-separated, ordered list of
+     =<pkg>/<ver>= pairs this and any other calls to =lcatr_packages=.
 
 - =CCDTEST_GIT_HASH= :: the hash passed to =lcatr_package=
 
@@ -142,9 +140,12 @@ this section.
  - =CCDTEST_SITE= :: the canonical name for the site context in which
                      the job is running.
 
+ - =CCDTEST_UNIT= :: the unit of testing ("CCD", "RTM")
+
  - =CCDTEST_JOB_ID= :: the unique identifier of the running job.
 
- - =CCDTEST_CCD_ID= :: the unique identifier of the CCD being tested.
+ - =CCDTEST_UNIT_ID= :: the unique identifier of the unit (eg CCD)
+      being tested.
 
  - =CCDTEST_OUTDIR= :: the directory from which the job will run and
    deposit its output files.

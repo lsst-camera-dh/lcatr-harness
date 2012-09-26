@@ -24,168 +24,213 @@
 #+XSLT:
 
 #+BEGIN_ABSTRACT
-Every test station and analysis software job runs under a common
-harness.
+The individual CCDs and their larger aggregates in the form of RTMs
+undergo a series of tests.  These tests are broken down into atomic
+jobs (aka "work processes").  Only parts of tests that are implemented
+by running a software program are considered in this note.  The note
+describes a job /harness/ which controls the execution of these jobs.
 #+END_ABSTRACT
 
 * Terms
 
- - test :: an manual or automated examination of a CCD by personnel,
-           hardware or software producing in one or more files
-           containing the results of the examination.  One test may
-           non-cyclically depend on the results of another.
+The terms used in this note are defined.
 
- - job :: the running of an automated test on a single CCD through
-          invoking one ore more related software programs.
+ - unit :: A unit of testing (eg, a CCD or an RTM)
 
- - station :: a physical test that takes measurements on a CCD
+ - test :: production of data from the examination of a unit or from
+           analyzing output from another test.  
+
+ - job :: any type of test (or portion of a test) that is implemented
+          by executing a software process (or multiple, related
+          processes) and producing one or more files containing the
+          results of the test.
+
+ - station :: a physical test that generates data by takeing
+              measurements of a unit either by human labor or by
+              invoking a software process.
 
  - analysis :: a pure software test operating on the output files of
-               one test and producing derived output files of its own.
+               another test and producing derived output files of its
+               own.
 
- - archive :: a central, organized file-system hierarchy storing the
-              result files of all tests.
+ - archive :: the root of a site-central, organized file-system
+              hierarchy storing all result files of all jobs.
 
- - stage :: a directory on the machine running a test where files are
-            written as they are produced.
+ - stage :: the root of a file-system local to the computer running a
+            job.  It temporarily stores the job's output files and,
+            where needed, holds a temporary copy of the output of
+            prior jobs needed as input to the current job.
 
  - operator :: an identified individual charged with running a job
 
- - LIMS :: a central database with fronting application for storing
-           result summaries and meta-data bookkeeping.
+ - LIMS :: the Laboratory Information Management System.  It consists
+           of a central database and fronting web application for
+           storing job result summaries, meta-data bookkeeping and
+           providing driving input to the job harness.
 
-* Requirements
+* The Job Harness
 
-The job harness provides a thin shim that runs the software on
-GNU/Linux and Cygwin/Windows platforms that makes up an LSST CCD test
-station or analysis job.  It provides the job with a standard run-time
-environment.  It is responsible for communicating with LIMS to
-providing bookkeeping information about the job.  It marshals the
-resulting files from a local staging area to the proper location in
-the archive file system.  Successful completion of the job includes
-feeding a summary of the results to the database.  One run of the job
-is broken into well defined steps producing well defined products.
-Every step must either successfully result in the expected products or
-it must fail in a way that makes clear that any intermediaries are
-invalid.
+The job harness ties together the LIMS, the running of individual job
+implementations and their result files.  It enforces a uniform
+interface between LIMS and the jobs and between jobs and the file
+archive.  It hides unneeded details of invoking a job from an
+operator.
 
-* Steps 
+* Cycle of job execution.
 
-The job proceeds through these steps:
+The role of the job harness is described by breaking down the cycle of
+executing one job.
 
- 1) The job harness is invoked by the operator who specifies input
-    parameters for the job.
+** Input parameters
 
- 2) The harness communicates to LIMS the input parameters and requests
-    a unique job identifier (/jobid/)
+A cycle starts by determining the input parameters to a job.  A these
+parameters include:
 
- 3) The input parameters are used to configure the run-time
-    environment including defining a top-level main and validation
-    program (script) to run.  See [[./dirhier.org]].
+ - unit :: the type of unit being tested (eg CCD or RTM)
 
- 4) A local staging directory is created and made current.
+ - ID :: the unique identifier of the unit
 
- 5) The top-level program is executed.
+ - name :: the canonical name for the job that will be run
 
- 6) The validation program is executed.
+ - version :: the released version of the job software
 
- 7) The contents of the current directory are copied to the archive.
+It is outside the scope of this document to state how the values of
+these input parameters will be determined however it is expected that
+they will ultimately be derived from a LIMS database query.
 
- 8) The FITS meta-file is provided to the database ingest process
+** Harness Invocation
 
- 9) The job exits.
+The harness is implemented in Python and can be invoked as a command
+line program or as part of a larger Python program.
 
-Details of each step are given in the following subsections.
+** Initial Environment 
 
-** Invocation
+The job environment is built in three steps.  It is initialized from
+the environment from which the harness is invoked (FIXME: should we
+limit this?) to which variables are added to expose the input
+parameters:
 
-The job harness is invoked interactively by the operator of the test
-station or analysis.  If all required input parameters are not
-specified the operator will be queried to supply missing parameters.
-LIMS can be queried in order to provide a selection from a list of
-possible values.  For example, at a given station and at a given time
-only a subset of CCD IDs can be available and this list can be
-presented to the user to facilitate indicating which CCD will be
-tested.
+ - =CCDTEST_UNIT= :: the type of unit being tested
 
-** Job ID allocation
+ - =CCDTEST_UID= :: the unique identifier of the unit
 
-To track which jobs are in progress or completed a unique job
-identifier (job ID) number is assigned to each invocation of the job
-harness in a production setting.  This job ID is allocated from LIMS
-by presenting information about the indented run:
+ - =CCDTEST_NAME= :: the canonical name of the test
 
- - CCD ID :: the unique identifier of the CCD being tested
+ - =CCDTEST_VERSION= :: the version string for the job's software
 
- - Job name :: the canonical name for the test
+** Static Job Environment
 
- - Operator :: the user name of the account from which the harness is being run
+The environment is then amended to use environment Modules (see
+http://modules.sf.net/) and to load the module specific for the given
+job.  Details of this step are described in the note on "[[./modulefiles.org][Describing
+LSST Sensor Test Software Environment with Modules]]".  The module
+loaded is determined by the canonical name and version given as input
+parameters.  If loading fails the harness aborts.
 
- - Stamp :: the date/time the job started
+** Job ID Allocation.
 
- - Version :: the version of the job software (Git tag and commit hash)
+Every job has an associated, unique identifier.  This identifier is
+allocated from LIMS based input parameters described above and these
+additional items:
 
-These quantities and the returned job ID are written to the FITS
-meta-data file produced at the end of the job.
+ - username :: user name of the account that invoked the harness
+               (taken from the environment variable =USER=).
 
-** Run-time environment configuration
+ - hostname :: the fully qualified host name of the computer running
+               the harness (taken from the OS)
 
-Based on the input parameters, particularly the job name and version,
-the run-time environment for the test software is configured.  The
-environment is setup to use a previously installed release of the test
-software (FIXME: reference document).  
+The allocation is done by making an HTTP query on the LIMS web front
+end.  The query supplies the these parameters and returns the
+allocation in the form of an HTML file containing the job identifier.
 
-The run-time environment provides access to the input parameters
-through environment variables.  Also defined are two variables that
-hold the path to two executable files:
+** Input Dependencies Resolution
 
- - =CCDTEST_JH_RUN= :: the main test program
+Some jobs require that the output files of prior jobs are available as
+input.  The harness resolves these dependencies by a call to a LIMS
+web service[fn:deps] in much the same was as the job identifier is
+allocated.  The query returns the previously registered input
+parameters and associated job ID for all successfully completed jobs
+on which the current one depends.  In the case where multiple jobs of
+any type have been run it is up to LIMS to determine which one shall
+provide the input to the current job.
 
- - =CCDTEST_JH_VALIDATE= :: the validation program
+[fn:deps] There is a mode used for testing where such dependencies are resolved through guesses made based on the contents of the archive.
 
-** Local staging area
+** Final Job Environment Configuration
 
-An empty directory is created and made current.  Test software
-must not produce any files outside this directory.
+Based on the allocated job ID and any input dependencies the job
+environment is updated to include variables of the form:
 
-** Running the main test program
+ - =CCDTEST_OUTDIR= :: the directory (relative path rooted on either
+      the local stage or the archive) from which the job will run and
+      which will contain any and all output files.
 
-The main test program, typically a script, encapsulates all details
-needed to run a test.  It must rely on the environment for any test
-specific information and it must not encode any test specific
-information into the names of any output files.  If any error is
-encountered it should return a non-zero error code.
+ - =CCDTEST_<dep>_OUTDIR= :: the directory (relative path rooted on
+      either the local stage or the archive) to find any files
+      produced by prior jobs on which the current job depends.  There
+      is on variable for each prior job named =<dep>=.
 
-** Running the validation program
+** Staging and File System Checking
 
-The validation program has three duties:
+The local stage file system is checked to assure that =CCDTEST_OUTDIR=
+does not exist.  The archive is checked for the existence of all
+=CCDTEST_<dep>_OUTDIR= directories.  If these checks fail the harness
+aborts.
 
- 1) perform any test-specific validation
+The =CCDTEST_<dep>_OUTDIR= directories are copied from the archive to
+a corresponding location on the local stage and the =CCDTEST_OUTDIR=
+directory is created and becomes the harness's current working directory.
 
- 2) produce the summary result FITS file(s)
+** Production Step of the Job
 
- 3) produce the meta-data FITS file
+The production program, as specified by the =CCDTEST_JOB_PRODUCER=
+environment variable, is executed.  Standard output and error are
+logged.  If the returns a failure code (non-zero) the harness aborts.
 
-If it fails it should return a non-zero error code.
+** Validation Step of the Job
 
-** Archiving the results
+The validation program, as specified by the =CCDTEST_JOB_VALIDTOR=
+environment variable, is executed.  The validator is expected to
+perform the following tasks:
 
-If the main test program and validation program succeed the entire
-contents of the current directory are copied to the archive directory
-hierarchy.  The archive location is built from the input parameters.
+ - Run any job-specific validation on the produced files and return a
+   non-zero code if validation fails.
 
-** Uploading to LIMS
+ - Produce one or more /result summary/ files (see note on 
+   "[[schema.org][LSST CCD Acceptance Testing File Schema]]")
 
-The meta-data FITS file is provided to the LIMS ingest process (FIXME:
-provide reference) in order for the results of the test to be
-completed.  This is done (t.b.d.) either by an HTTP file upload or by
-an HTTP POST providing the location of the file on a shared archive
-file system.
+ - Produce a single /meta data/ file (see same note) with the name of
+   =metadata.fits=.
+
+Standard output and error are logged.  If the returns a failure code
+(non-zero) the harness aborts.
+
+** Archiving
+
+The contents of the current directory are copied into =CCDTEST_OUTDIR=
+rooted at the archive.
 
 ** Termination
 
-The job harness exits with a non-zero error code if any error was
-encountered.
+At exit the job harness notifies LIMS about the completion of the job
+by making a web service call that includes the following information:
+
+ - Job ID :: the job identifier previously allocated
+
+ - status :: a status code indicating nominal success or a description
+             of a failure if it occurred (and was caught).
+
+
+** Clean up
+
+Files in the stage are removed.
+
+Details of each step are given in the following subsections.
+
+
+* Configuration file
+
+TBD. 
 
 * External requirements
 
@@ -193,44 +238,22 @@ The following things must be provided before the job harness can run
 
 ** Authentication
 
-The job harness will need to run =rsync= over SSH to copy result files
-to the final archive file system.  This relies on an SSH key pair to
-be generated and the public key installed on the archive file system
-server.  
+The job harness will need to run from an account that can access the
+archive server via SSH.  This is needed to perform existence checks on
+the archive and to copy files between the archive and the local stage.
+For unattended running it is strongly recommended to setup an SSH key
+pair such that a phassphrase/password need not be given interactively
+while jobs run.
 
 ** Environmental Modules
 
-The job harness relies on externally defined environmental Modules
-(see http://modules.sf.net/) to define the run time environment for
-the software that makes up a test station or analysis.  The Modules
-package is assumed to be installed from source in the standard manner
-or as a system package.  The modulefiles should be written in the
-usual way but following some additional conventions described in the
-following subsections.
-
-*** Naming
-
-A Module is loaded through a name formed by the joining the canonical
-test name and its version string (the Git tag) with a dash ("=-=").
-For example:
-
-#+begin_example
-station1-v1.0
-#+end_example
-
-
-*** Dependencies
-
-Only the modulefile for the test being run will be loaded and so it
-must take care to load the modulefiles of any other packages that it
-requires.  A modulefile should always be tested assuming no special
-environment other than what is necessary to run the "=module=" command
-itself.
-
-In addition, any test (typically analyses) that depend on the output
-files of other tests must specify these tests as described in
-[[./dirhier.org]].
-
+As described above, the job harness relies on externally defined
+environmental Modules.  It is expected that the Modules support
+programs are already installed and that the suite of job-specific
+/modulefiles/ exist.  Their locations may be specified in the harness
+configuration file, previously set up using standard Modules
+environment variables or the harness will attempt to guess the
+locations.
 
 
 
