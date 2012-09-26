@@ -38,7 +38,8 @@ class Job(object):
         self.cfg = cfg
         em = environment.Modules()
         em.guess_setup()
-        em.load(cfg.name,cfg.version)
+        modfile = '%s-%s' % (cfg.name, cfg.version)
+        em.load(modfile)
         self.env = em.env
         return
 
@@ -58,7 +59,7 @@ class Job(object):
         '''
         Run the main process
         '''
-
+        
         return
 
     def validate(self):

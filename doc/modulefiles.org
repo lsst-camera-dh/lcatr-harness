@@ -1,0 +1,155 @@
+#+TITLE: Describing LSST CCD Test Software Environment with Modules
+#+AUTHOR: Brett Viren
+#+EMAIL: bv@bnl.gov
+#+DATE: \today
+
+#+LATEX_HEADER: \usepackage{hyperref}
+#+LATEX_HEADER: \hypersetup{
+#+LATEX_HEADER:   hyperindex=true,
+#+LATEX_HEADER:   plainpages=false,
+#+LATEX_HEADER:   colorlinks=true,
+#+LATEX_HEADER:   linkcolor=black
+#+LATEX_HEADER: }
+
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+#+LINK_UP:
+#+LINK_HOME:
+#+XSLT:
+
+#+BEGIN_ABSTRACT
+NOTE: THIS IS STILL IN DRAFT FORM.  This note describes how
+environmental "modules" are used to define the run-time environment
+variables for CCD test stations and analysis software.
+#+END_ABSTRACT
+
+* Overview
+
+The LSST CCD testing software (that which drives a test station or
+performs analysis on station output) must be managed in terms of the
+versions employed and the run-time environment supplied.  The software
+must run at more than one site and on diverse platforms and their
+results must be merged, organized and made available to the
+collaboration.  The execution of all software controlled with a common
+job harness (see [[./jobharness.org]]).  The environment is controlled
+using "Modules" (see http://modules.sf.net) as described here.
+
+The environment for each installed version of a test software package
+is defined in so called /modulefiles/.  A set of conventions are
+chosen to simplify writing these files and to supply information
+needed for the job harness and for recording what version of the
+software was run.  Some additional environment variables are provided
+to the software by the job harness.
+
+* Package Installation
+
+The /modulefile/ describes an installed package.  The installation
+must faithfully represent the state of source code (or in cases of
+proprietary programs, binaries) taken from a Git repository based on a
+unique identifier (a Git tag associated with a commit).
+
+The test software developer promotes a release by making a Git tag on
+the appropriate commit and communicating this tag to the release
+managers of each site.  The release managers then install the tagged
+version and produce a /modulefile/ for this installation.
+
+
+* Layout of /modulefiles/
+
+A single repository of /modulefiles/ is maintained (in Git) and shared
+by all sites.  The /modulefiles/ for every released version of all
+software packages are organized in a directory tree.  For each test
+software package there is a directory of the same name which contains
+a /modulefile/ for each released version.  The version string used for
+the /modulefile/ name must match the string used to produce the Git
+tag of the released software.  This means that a new /modulefile/ is
+always created when a new version of the test software is released,
+even if this new file may contain no appreciable differences from the
+prior one.
+
+Different versions of the /modulefiles/ themselves are tracked in Git
+but in a trivial manner.  In general the most recent version available
+should always be used.  The /modulefiles/ should be kept in a Git
+controlled area as the Git commit hash will be recorded.
+
+
+* Boilerplate /modulefile/ commands
+
+Every /modulefile/ must register itself by calling the function:
+
+#+begin_src tcl
+lcatr_package <HASH> [dep1 dep2 ...]
+#+end_src
+
+The first argument, =<HASH>=, is the Git commit SHA1 hash
+corresponding to the Git tag used to make the release (and name the
+/modulefile/).  
+
+Any additional arguments are interpreted to be other packages under
+control of these /modulefiles/ which this /modulefile/ depends on.
+They should be specified with the form "=Name/Version=".  On package
+depends on another if it requires its code or it requires its output.
+
+The =lcatr_package= function is defined in a =util.tcl= file which can
+be located and sourced by the /modulefile/ with:
+
+#+begin_src tcl
+set base [file dirname [file dirname $ModulesCurrentModulefile]]
+source $base/util.tcl
+
+lcatr_package ...
+#+end_src
+
+After calling the =lcatr_package= all dependent packages are loaded
+(via a =module load= call) and a set of standard environment variables
+are defined by this package.  
+
+* Environment determined by =lcatr_package=
+
+The call to the =lcatr_package= function will produce these
+environment variables.  Some are based on implicitly defined (by the
+job harness, see below) environment variables
+
+ - =CCDTEST_NAME= :: the name of the package, taken from the directory
+   part of the /modulefile/.
+
+ - =CCDTEST_VERSION= :: the version of the package, taken from the name
+   of the /modulefile/
+
+- =CCDTEST_DEPS= :: a colon-separated, ordered list of =<pkg>/<ver>=
+                    pairs of the dependencies passed to =lcatr_package=.
+
+- =CCDTEST_GIT_HASH= :: the hash passed to =lcatr_package=
+
+- =CCDTEST_MODULEFILES_HASH= :: the Git commit hash that has been
+     checked out and providing the /modulefile/ being loaded.
+
+
+* Environment determined by the job harness
+
+Additional environment determined by the job harness based on the
+configuration it is given and based on the results of loading the
+/modulefile/.  These variables are available to the job but not in the
+context of the /modulefiles/.  The provided variables are described in
+this section.
+
+ - =CCDTEST_SITE= :: the canonical name for the site context in which
+                     the job is running.
+
+ - =CCDTEST_JOB_ID= :: the unique identifier of the running job.
+
+ - =CCDTEST_CCD_ID= :: the unique identifier of the CCD being tested.
+
+ - =CCDTEST_OUTDIR= :: the directory from which the job will run and
+   deposit its output files.
+
+ - =CCDTEST_<dep>_OUTDIR= :: the directory where output files from the
+   prior running of a the dependency =<dep>= were placed.  Such a
+   variable is also produced for the /modulefile/ being processed.
+ 

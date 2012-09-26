@@ -79,18 +79,21 @@ installation is described by the environment variables:
 
  - =$CCDTEST_<NAME>_HOME= :: locates the installation directory of the software.
 
- - =$CCDTEST_<NAME>_GIT_TAG= :: the git tag of the software release
+ - =$CCDTEST_<NAME>_VERSION= :: the git tag of the software release
 
  - =$CCDTEST_<NAME>_GIT_HASH= :: the git SHA1 hash of the software release
 
 In addition variables like =$PATH= will be suitably modified.
+See [[./modulesfiles.org]] for how the environment is to be defined.
 
 
 * Job-specific environment
 
 Some standard environment variables are defined on a per-job basis:
 
- - =$CCDTEST_CCD_ID= :: the ID string for the CCD being tested.
+ - =$CCDTEST_JOB_ID= :: a job identifier unique to the site
+
+ - =$CCDTEST_CCD_ID= :: an identifier for the CCD being tested.
 
  - =$CCDTEST_NAME= :: the canonical name of the test.
 
@@ -148,12 +151,14 @@ sub-directories named, in order, by these elements:
 
  2. =<NAME>= the canonical name for the test.
 
- 3. =<STAMP>= a time stamp indicating when the test was run.
+ 3. =<VERSION>= the version of the test software
+
+ 4. =<JOB_ID>= the unique job identifer
 
 A general output path would then be:
 
 #+begin_src sh
-CCDTEST_<NAME>_DIR=$CCDTEST_ROOT/<CCD_ID>/<NAME>/<STAMP>/
+CCDTEST_<NAME>_DIR=$CCDTEST_ROOT/<CCD_ID>/<NAME>/<VERSION>/<JOB_ID>/
 #+end_src
 
 It is noted that the values ofr these individual elements are exposed
@@ -241,7 +246,8 @@ The test software can rely on the following environment variables:
 
  - =$CCDTEST_<NAME>_HOME= :: the directory where the software has been installed.
 
- - =$CCDTEST_<NAME>_GIT_TAG= :: the =git= commit tag 
+ - =$CCDTEST_<NAME>_VERSION= :: the human readable version string
+      (same as the =git= commit tag)
 
  - =$CCDTEST_<NAME>_GIT_HASH= :: the =git= commit SHA1 hash
 

@@ -184,6 +184,8 @@ class Modules(object):
         status = proc.poll()
         if status: 
             raise RuntimeError,err
+        if 'ERROR' in err:      # modulecmd lets errors sneak by w/out an error return code
+            raise RuntimeError,err
         return out
 
     def do_cmd(self, cmd, mod_name, *args):
@@ -219,7 +221,7 @@ class Modules(object):
     def __getattr__(self, cmd):
         if not cmd in ['load','add','unload','rm']: 
             return self.__dict__[cmd]
-        return lambda *args: self.do_cmd(cmd,*args)
+        return lambda name, *args: self.do_cmd(cmd, name, *args)
 
     pass
 
