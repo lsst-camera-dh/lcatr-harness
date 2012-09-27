@@ -17,14 +17,21 @@ def guess_site():
     domain = '.'.join(fqdn.split('.')[-2:])
     return domain
 
+def dump_dict(msg,d):
+    print msg
+    for k,v in d.iteritems():
+        print '\t%s:%s'%(k,v)
+
 class Config(object):
     '''
-    Encapsulates and builds the configuration for a job.
+    The configuration for a job harness instance.
     '''
+
+    envvar_prefix = 'LCATR_'
 
     # Policy definition of the layout of a result's output relative to
     # ccdtest_root:
-    subdir_policy = '%(ccd_id)s/%(name)s/%(version)s/%(job_id)s'
+    subdir_policy = '%(unit_type)s/%(unit_id)s/%(name)s/%(version)s/%(job_id)s'
 
     # places to look for RC files.
     default_config_files = [
@@ -35,72 +42,88 @@ class Config(object):
     # To be fully configured these parameters must be provided.
     required_parameters = [
         
-        'name',       # Canonical name of the test station/analysis
+        'context',    # A context, meta parameter used to define others
+        'site',       # The (canonical or test) name for a site
+        'local'       # Name for a local environment, used to define others
+        'job',        # Canonical name of the job
         'version',    # Test software version string (git tag) 
         'operator',   # User name of person operating/running the test
         'site',       # Canonical site location where we are running 
         'stamp',      # A time_t seconds stamping when job ran
-        'local_root', # The CCDTEST_ROOT on local machine
+        'stage_root', # The CCDTEST_ROOT on local machine
         'archive_root', # The CCDTEST_ROOT base of the archive
         'archive_host', # The name of the machine hosting the archive
         'archive_user', # Login name of user that can write to archive
-        'ccd_id',       # The unique CCD identifier
+        'unit_type',    # type of unit (eg, CCD/RTM)
+        'unit_id',      # The unique unit identifier
         'job_id',       # The unique job identifer
-
+        'modules_home', # Where Modules is installed, sets MODULESHOME
+        'modules_version', # Modules installation version
+        'modules_cmd',  # the path to the modulescmd program.
+        'modules_path', #  adds to MODULEPATH env var
         ]
 
-    def __init__(self, name, filename = None, **kwds):
+    def __init__(self, **kwds):
         
-        self.name = name
+        cfg = {}
 
-        # sane defaults
-        self.operator = os.environ.get('USER')
-        self.site = guess_site()
-        self.stamp = time.time()
-        self.local_root = os.path.curdir
-
-        # Config file gets next chance
-        self._cfg = SafeConfigParser()
-        self.load(filename)
-
-        # Final chance by caller
-        self.__dict__.update(kwds)
-        return
-
-    def cfgget(self, section, name):
-        try:
-            val = self._cfg.get(section, name)
-        except NoSectionError, msg:
-            #print >> sys.stderr, msg
-            return None
-        return val
-
-    def load(self, filename = None):
-        if not filename:
-            filename = self.default_config_files
-        #print 'Reading configuration from',filename
-        self._cfg.read(filename)
-
-        lr = self.cfgget('local','local_root')
-        if lr: self.local_root = lr
-
-        site = self.cfgget('local','site')
-        if site: 
-            self.site = site
-
-        if self.site:
-            for what in ['root','user','host']:
-                aname = 'archive_%s' % what
-                v = self.cfgget('site %s'%self.site, aname)
-                if v: self.__dict__[aname] = v
+        # all matching environment variables 
+        for k,v in os.environ.iteritems():
+            if not k.startswith(Config.envvar_prefix): 
                 continue
-            pass
+            name = k[len(Config.envvar_prefix):]
+            cfg[name.lower()] = v
+            continue
+        #dump_dict('After environ',cfg)
 
-        versions = self.cfgget('local','versions')
-        if versions:
-            v = self.cfgget('versions %s' % versions, self.name)
-            if v: self.version = v
-            pass
+
+        # open config file(s) and slurp the [default] section 
+        scp = SafeConfigParser()
+        files = list(Config.default_config_files)
+        for what in ['config','configs','filename','filenames']:
+            fn = kwds.get(what)
+            if fn:
+                if isinstance(fn,str): 
+                    fn = [fn]
+                files += fn
+                del kwds[what]
+                pass
+            continue
+        #print 'Trying files:',' '.join(files)
+        used = scp.read(files)
+        #print 'Loaded files:',' '.join(used)
+        #dump_dict('Defaults:',scp.defaults())
+        cfg.update(scp.defaults())
+        #dump_dict('After cfgfile',cfg)
+            
+        # update based on command line args
+        cfg.update(kwds)
+        #dump_dict('After kwds:',cfg)
+
+        # Apply section defaults
+        def resolve_section(param,value):
+            secname = param +' '+ value
+            if not scp.has_section(secname): 
+                return
+            for k,v in scp.items(secname):
+                if cfg.has_key(k):
+                    if v == cfg[k]: continue
+                    print 'Default value of %s = %s overridden by %s' % (k,v,cfg[k])
+                    continue
+                cfg[k] = v
+                #print '\tnamed section: %s=%s' %(k,cfg[k])
+                resolve_section(k,v)
+                continue
+            return
+        for param in cfg.keys():
+            value = cfg[param]
+            resolve_section(param,value)
+            continue
+        #dump_dict('After section',cfg)
+                    
+        self.__dict__.update(cfg)
+        #dump_dict('Final', cfg)
+
         return
 
     def complete(self):
@@ -115,6 +138,13 @@ class Config(object):
         got = set(self.__dict__.keys())
         return list(req.difference(got))
 
+    def extra(self):
+        'Return a list of configuration parameter that have been set but are not expected'
+        req = set(self.required_parameters)
+        got = set(self.__dict__.keys())
+        return list(got.difference(req))
+        
+
     def set(self, name, value):
         self.__dict__[name] = value
         return
@@ -124,6 +154,8 @@ class Config(object):
         if self.complete(): comp = "complete"
         ver = self.__dict__.get('version',"")
         return 'Config: "%s" (%s) %s' % (self.name, comp, ver)
+
+    # fixme: these policy methods need to move somewhere else
 
     def subdir(self, prefix=None):
         '''

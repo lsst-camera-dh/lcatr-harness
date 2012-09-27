@@ -5,39 +5,80 @@ Test the lcatr.harness.config module
 
 import os
 from lcatr.harness import config
+import tempfile
 
-def test_dump():
-    cfgfile = os.path.join(os.path.dirname(__file__), 'lcatr.cfg')
-    c = config.Config(name="test_config", site='TESTSITE', filename = cfgfile)
+cfgfd = None,
+cfgfile = None
+
+def test_make_cfgfile():
+    global cfgfd
+    global cfgfile 
+    cfgfd = tempfile.NamedTemporaryFile()
+    cfgfile = cfgfd.name
+
+    cfgfd.write('''
+[DEFAULT]
+unit_type = CCD
+unknown_parameter = 42
+
+[local LTEST]
+local_root = /path/to/local/stage
+site = TESTSITE
+
+[site TESTSITE]
+archive_root = /path/to/remote/archive
+archive_user = testuser
+archive_host = testhost
+
+[job fake]
+version = v0
+''')
+    cfgfd.flush()
+    #cfgfd.close()
+    return
+
+
+def dump(msg,c):
+    print msg
     for k,v in sorted(c.__dict__.iteritems()):
         if k[0] == '_': continue
         print '\t%s = %s' % (k,v)
+        continue
+    return
 
+def test_env():
+    os.environ['LCATR_SITE'] = 'TESTSITE'
+    c = config.Config(config=cfgfile)
+    assert c.site == 'TESTSITE'
+    #dump('After env',c)
+    return
+
+def test_dump():
+    c = config.Config(config = cfgfile)
+    assert c.unit_type == 'CCD'
+    assert c.archive_user == 'testuser'
+    #dump('Dump',c)
+    return
 
 def test_incomplete():
     '''
     Make an incomplete config object
     '''
-
-    c = config.Config(name="test_config")
+    c = config.Config(filename=cfgfile)
     assert not c.complete(), 'Incomplete config object says it is complete'
     
-
-def test_complete():
-    '''
-    Make a complete config object
-    '''    
-    c = config.Config("test_config",version="v0.0")
-    for req in c.required_parameters:
-        if req in ['name','version']: continue
-        c.set(req,"foo")
-    assert c.complete(), 'Complete config object says it is not'
-    print c
-    assert str(c) == 'Config: "test_config" (complete) v0.0'
-    assert c.archive_rsync_path() == 'foo@foo:foo'
+def test_missing():
+    c = config.Config(filename=cfgfile)
+    #print c.missing()
+    #print c.extra()
+    assert c.missing() == ['job_id', 'stamp', 'stage_root', 'unit_id', 'localjob', 'modules_version', 'version', 'context', 'operator', 'modules_home', 'modules_cmd', 'modules_path']
+    assert c.extra() == ['unknown_parameter']
+    return
 
 if __name__ == '__main__':
-    
+    test_make_cfgfile()
+    test_env()
     test_dump()
     test_incomplete()
-    test_complete()
+    test_missing()
+

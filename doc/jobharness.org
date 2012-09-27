@@ -23,6 +23,8 @@
 #+LINK_HOME:
 #+XSLT:
 
+#+MACRO: envprefix LCATR_
+
 #+BEGIN_ABSTRACT
 The individual CCDs and their larger aggregates in the form of RTMs
 undergo a series of tests.  These tests are broken down into atomic
@@ -34,6 +36,13 @@ describes a job /harness/ which controls the execution of these jobs.
 * Terms
 
 The terms used in this note are defined.
+
+ - canonical :: indicates that an item is globally known to all parts
+                of the testing system.  In particular sites and jobs
+                have canonical identifiers.
+
+ - site :: the context in which a collection of tests are made (eg,
+           "BNL").
 
  - unit :: A unit of testing (eg, a CCD or an RTM)
 
@@ -228,9 +237,118 @@ Files in the stage are removed.
 Details of each step are given in the following subsections.
 
 
-* Configuration file
 
-TBD. 
+* Configuration 
+
+An instance of a job harness may be configured from a variety of
+sources: environment, configuration files or explicit arguments.
+The parameters are resolved in four steps:
+
+ 1) The run-time environment initializes the set of configuration
+    parameters.
+
+ 2) Configuration files are checked and any parameters defined in
+    named "=[DEFAULT]=" will update the configuration.
+
+ 3) Explicit arguments are applied to the configuration.
+
+ 4) The configuration files are checked again for any sections named
+    after an existing parameter and value
+
+Specifics of each configuration step are given in the following sections.
+
+** Configuration through the environment
+
+Configuration parameters may be specified with environment variables.
+Their names should be constructed by the capitalized parameter name
+with "{{{envprefix}}}".
+
+** Configuration files
+
+Zero or more configuration files may be read by the harness.  
+The files checked are:
+
+#+begin_example
+~/.lcatr.cfg
+./lcatr.cfg
+#+end_example
+
+They may provide configuration parameters in two ways.  First, the
+"=[DEFAULT]=" section overrides parameters supplied by environment
+variables but may be further overridden by those explicitly supplied
+(see below)
+
+Second, after the command line parameters are applied the files are
+checked a second time for any sections that match the key/value name
+of any existing parameters.  For example a section named "=[site
+BNL]=" matches the parameter "=site=" with the value "=BNL=".  Any
+parameters listed in the section will be applied.  If they are not yet
+set they will be but they will not override previously set parameters.
+That is, they provide a set of default tied to the setting of some
+other parameter.
+
+This last step in resolving the parameters is general but intended to
+only be used for the high-level parameters such as =context=, =site=,
+=local= and =job=.
+
+** Explicit arguments
+
+The main Python =job.Job= class constructor takes as keywords zero or
+more parameters.  The command line invocation of the harness can be
+given zero or more parameters using command line arguments like:
+
+#+begin_example
+--parameter=value
+#+end_example
+
+These explicit parameters will override any of the same names provided
+by the environment or by any "=[DEFAULT]=" sections of configuration
+files.
+
+** List of Configuration Parameters
+
+The configuration parameters understood by the harness are:
+
+ - =context= :: an identifier of a combination of =site=, =local= and
+                =job=.
+
+ - =site= :: a (canonical) identifier for a site.
+
+ - =local= :: an identifier for the computing environment (machine)
+              running the harness.
+
+ - =job= :: a (canonical) identifier for a job.
+
+ - =version= :: a version string matching a Git tag used to make a
+                release and installation of the software for a job.
+
+ - =operator= :: the username of the account invoking the harness
+
+ - =archive_root= :: the absolute path to the root of the archive file
+                     system.
+
+ - =archive_user= :: the username that can access a machine with
+                     =archive_root= mounted via SSH.
+
+ - =archive_host= :: the host name of the computer that has the
+                     archive file system mounted.
+
+ - =stage_root= :: the absolute path to the root of the stage file
+                   system.
+
+ - =dependencies= :: a colon-separated list of job name/version pairs
+                     on which the current job depends.
+
+ - =modules_home= :: a local directory containing the installation of
+                     Modules (specifically containing the =init/= sub
+                     directory)
+
+ - =modules_version= :: the version of the Modules installation .
+
+ - =modules_cmd= :: the path to the =modulescmd= program.
+
+ - =modules_path= :: a colon-separated path of in which to search for
+                     /modulefiles/.
 
 * External requirements
 
