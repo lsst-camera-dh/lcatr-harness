@@ -26,7 +26,8 @@ def cmd(cmd, host = "localhost", user = os.environ.get('USER')):
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out,err = proc.communicate()
     status = proc.poll()
-    if status == 255: raise RuntimeError,'SSH cmd "%s" failed.' % (cmd)
+    if status == 255: 
+        raise RuntimeError,'SSH cmd "%s" failed.' % (sshcmd)
     return status,out,err
 
 def stat(path, host = "localhost", user = os.environ.get('USER')):

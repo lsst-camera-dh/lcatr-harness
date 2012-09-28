@@ -53,6 +53,42 @@ def guess_modules_version():
     if not got: return None
     return os.path.basename(got)
 
+def guess_modules_path():
+    mp = os.environ.get('MODULEPATH')
+    if mp: return mp
+    return None
+
+
+def resolve_modulepath(home, env = None, modpath = None):
+
+    saved_environ = os.environ
+    if env:
+        os.environ = env
+
+    if not modpath:
+        modpath = []
+    elif isinstance(modpath,str):
+        modpath = modpath.split(":")
+    try:
+        fp = open(os.path.join(home, 'init/.modulespath'))
+    except IOError:
+        pass
+    else:
+        for line in fp.readlines():
+            line = re.sub("#.*$", '', line)
+            line = line.strip()
+            if not line: continue
+            line = os.path.expandvars(line)
+            if line not in modpath:
+                modpath.append(line)
+            continue
+        pass
+
+    os.environ = saved_environ
+
+    return modpath
+
+
 def module_name(test_name, test_version = ""):
     '''
     Build module name.
@@ -101,7 +137,7 @@ class Modules(object):
         self.setup(home, modcmd, version)
         return
 
-    def setup(self, home, cmd = None, version = None):
+    def setup(self, home, cmd = None, version = None, modpath = None):
         '''
         Setup environment needed to run modules itself.
 
@@ -137,29 +173,7 @@ class Modules(object):
             'LOADEDMODULES': '',
             })
 
-
-        # this is probably dangerous....
-        saved_environ = os.environ
-        os.environ = self.env
-
-        modpath = []
-        try:
-            fp = open(os.path.join(home, 'init/.modulespath'))
-        except IOError:
-            pass
-        else:
-            for line in fp.readlines():
-                line = re.sub("#.*$", '', line)
-                line = line.strip()
-                if not line: continue
-                line = os.path.expandvars(line)
-                modpath.append(line)
-                continue
-            pass
-
-        os.environ = saved_environ
-
-        # module.sf.net specific variables cribbed from init/* files
+        modpath = resolve_modulepath(home, env = self.env, modpath = modpath)
         self.env['MODULEPATH'] = ':'.join(modpath)
 
         return
@@ -174,7 +188,8 @@ class Modules(object):
             args = args[0]
         else:
             args = list(args)
-        proc = subprocess.Popen([self.cmdstr, flavor] + args,
+        cmd = [self.cmdstr, flavor] + args
+        proc = subprocess.Popen(cmd,
                                 stdout = subprocess.PIPE,
                                 stderr = subprocess.PIPE,
                                 env = self.env)
@@ -182,10 +197,12 @@ class Modules(object):
         #print 'OUT:\nVVV\n%s\n^^^' % out
         #print 'ERR:\nVVV\n%s\n^^^' % err
         status = proc.poll()
-        if status: 
-            raise RuntimeError,err
-        if 'ERROR' in err:      # modulecmd lets errors sneak by w/out an error return code
-            raise RuntimeError,err
+
+        # Check also for 'ERROR' because modulecmd lets errors sneak
+        # by w/out an error return code
+        if status or 'ERROR' in err:
+            msg = '%s\ncmd: "%s" with path: %s' % (err,' '.join(cmd), self.env['MODULEPATH'])
+            raise RuntimeError,msg
         return out
 
     def do_cmd(self, cmd, mod_name, *args):

@@ -10,33 +10,36 @@ import tempfile
 cfgfd = None,
 cfgfile = None
 
-def test_make_cfgfile():
-    global cfgfd
-    global cfgfile 
-    cfgfd = tempfile.NamedTemporaryFile()
-    cfgfile = cfgfd.name
+def make_cfgfile():
+    fd = tempfile.NamedTemporaryFile()
+    fn = fd.name
 
-    cfgfd.write('''
+    fd.write('''
 [DEFAULT]
 unit_type = CCD
 unknown_parameter = 42
 
 [local LTEST]
-local_root = /path/to/local/stage
+local_root = /tmp
 site = TESTSITE
 
 [site TESTSITE]
-archive_root = /path/to/remote/archive
+archive_root = /tmp
 archive_user = testuser
 archive_host = testhost
 
 [job fake]
 version = v0
 ''')
-    cfgfd.flush()
-    #cfgfd.close()
-    return
+    fd.flush()
+    #fd.close() # <-- don't do it
+    return fd, fn
 
+def test_make_cfgfile():
+    global cfgfd
+    global cfgfile 
+    cfgfd, cfgfile = make_cfgfile()
+    return 
 
 def dump(msg,c):
     print msg

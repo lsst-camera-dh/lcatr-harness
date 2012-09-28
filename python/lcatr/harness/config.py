@@ -9,13 +9,7 @@ import time
 import socket                   # for hostname
 from ConfigParser import SafeConfigParser, NoSectionError
 
-def guess_site():
-    '''
-    Return a site name take as the top two in the FQDN
-    '''
-    fqdn = socket.gethostbyaddr(socket.gethostname())[0]
-    domain = '.'.join(fqdn.split('.')[-2:])
-    return domain
+import environment
 
 def dump_dict(msg,d):
     print msg
@@ -31,7 +25,7 @@ class Config(object):
 
     # Policy definition of the layout of a result's output relative to
     # ccdtest_root:
-    subdir_policy = '%(unit_type)s/%(unit_id)s/%(name)s/%(version)s/%(job_id)s'
+    subdir_policy = '%(unit_type)s/%(unit_id)s/%(job)s/%(version)s/%(job_id)s'
 
     # places to look for RC files.
     default_config_files = [
@@ -43,25 +37,35 @@ class Config(object):
     required_parameters = [
         
         'context',    # A context, meta parameter used to define others
-        'site',       # The (canonical or test) name for a site
+        'site',       # The (canonical or a test) name for a site
         'local'       # Name for a local environment, used to define others
         'job',        # Canonical name of the job
         'version',    # Test software version string (git tag) 
         'operator',   # User name of person operating/running the test
-        'site',       # Canonical site location where we are running 
         'stamp',      # A time_t seconds stamping when job ran
-        'stage_root', # The CCDTEST_ROOT on local machine
-        'archive_root', # The CCDTEST_ROOT base of the archive
+        'stage_root', # The LCATR_ROOT on local machine
+        'archive_root', # The LCATR_ROOT base of the archive
         'archive_host', # The name of the machine hosting the archive
         'archive_user', # Login name of user that can write to archive
         'unit_type',    # type of unit (eg, CCD/RTM)
         'unit_id',      # The unique unit identifier
         'job_id',       # The unique job identifer
-        'modules_home', # Where Modules is installed, sets MODULESHOME
-        'modules_version', # Modules installation version
-        'modules_cmd',  # the path to the modulescmd program.
-        'modules_path', #  adds to MODULEPATH env var
         ]
+
+    # These are required but are allowed to be guessed in the code if
+    # not specified otherwise.
+    allow_implicit = [
+        'site',       # guessed based on hostname
+        'operator',   # guessed based on USER env var
+        'stamp',      # taken as current time
+        'stage_root', # taken as current working directory
+
+        'modules_home',         # guessed 
+        'modules_version',      # by the
+        'modules_cmd',          # environment
+        'modules_path',         # module
+        ]
+
 
     def __init__(self, **kwds):
         
@@ -124,23 +128,70 @@ class Config(object):
         self.__dict__.update(cfg)
         #dump_dict('Final', cfg)
 
+        for imp in Config.allow_implicit:
+            meth = eval ("self.guess_%s"%imp)
+            meth()
+            continue
+
         return
 
-    def complete(self):
+    def guess_site(self):
+        if hasattr(self,'site'): return self.site
+        fqdn = socket.gethostbyaddr(socket.gethostname())[0]
+        self.site = '.'.join(fqdn.split('.')[-2:])
+        return self.site
+
+    def guess_operator(self):
+        if hasattr(self,'operator'): return self.operator
+        self.operator = os.environ['USER']
+        return self.operator
+
+    def guess_stamp(self):
+        if hasattr(self,'stamp'): return self.stamp
+        self.stamp = time.time()
+        return self.stamp
+
+    def guess_stage_root(self):
+        if hasattr(self,'stage_root'): return self.stage_root
+        self.stage_root = os.getcwd()
+        return self.stage_root
+
+
+    def guess_modules_home(self):
+        if hasattr(self,'modules_home'): return self.modules_home
+        self.modules_home = environment.guess_modules_home()
+        return self.modules_home
+
+    def guess_modules_version(self):
+        if hasattr(self,'modules_version'): return self.modules_versiong
+        self.modules_version = environment.guess_modules_version()
+        return self.modules_version
+
+    def guess_modules_cmd(self):
+        if hasattr(self,'modules_cmd'): return self.modules_cmd
+        self.modules_cmd = environment.guess_modules_cmd()
+        return self.modules_cmd
+
+    def guess_modules_path(self):
+        if hasattr(self,'modules_path'): return self.modules_path
+        self.modules_path = environment.guess_modules_path()
+        return self.modules_path
+
+    def complete(self, req = None):
         'Return True if all configuration parameters are specified.'
-        req = set(self.required_parameters)
+        req = set(req or Config.required_parameters)
         got = set(self.__dict__.keys())
         return req.issubset(got)
 
-    def missing(self):
+    def missing(self, req = None):
         'Return missing configuration parameters'
-        req = set(self.required_parameters)
+        req = set(req or Config.required_parameters)
         got = set(self.__dict__.keys())
         return list(req.difference(got))
 
-    def extra(self):
+    def extra(self, req = None):
         'Return a list of configuration parameter that have been set but are not expected'
-        req = set(self.required_parameters)
+        req = set(req or Config.required_parameters)
         got = set(self.__dict__.keys())
         return list(got.difference(req))
         

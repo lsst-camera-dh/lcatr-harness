@@ -6,24 +6,35 @@ Test the lcatr.harness.job module.
 import os
 from lcatr.harness import job, config
 
+from test_config import make_cfgfile
+
 jerb = None
 
 def test_create():
     global jerb
-    cfgfile = os.path.join(os.path.dirname(__file__), 'lcatr.cfg')
-    cfg = config.Config(name='test_config', site='TESTSITE', filename=cfgfile)
+
+    fd, fn = make_cfgfile()
+    cfg = config.Config(filename=fn, local='LTEST')
     cfg.ccd_id = 0
     cfg.job_id = 0
+    cfg.job = 'fake'
+    cfg.version = 'v0'
+    cfg.unit_id = '000000'
 
     jerb = job.Job(cfg)
-    #print 'Dey tuek er jerbs:',jerb
+    #print 'Dey tue ker jerbs:',jerb
     #print '\n'.join(['\t%s = %s' % (k,v) for k,v in jerb.env.iteritems()])
     return
 
 def test_archive_not_there():
-    there = jerb.archive_exists()
-    assert not there, 'Archive exists at %s' % jerb.cfg.archive_rsync_path()
-    print 'Not there:',jerb.cfg.subdir('archive')
+    try:
+        there = jerb.archive_exists()
+    except RuntimeError,msg:
+        print 'Got expected RuntimeError: "%s"' % msg
+    else:
+        raise
+
+    return
 
 if __name__ == '__main__':
     test_create()
