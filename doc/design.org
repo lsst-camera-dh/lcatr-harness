@@ -23,40 +23,43 @@
 #+LINK_HOME:
 #+XSLT:
 
-#+BEGIN_ABSTRACT
 The individual LSST camera parts (CCDs and their larger aggregates in
 the form of RTMs) undergo a series of acceptance tests and analysis.
 Many of the procedures for this are implemented by running software of
-some sort.  Each software-based procedure is broken down into one or
+some sort.  This software runs on a variety of platforms, is
+programmed in a variety of languages and is written by collaborators
+and some may be commercial/proprietary.
+Each software-based procedure is broken down into one or
 more /jobs/.  The running of these jobs and the organization of their
-results is managed by higher level software dubbed the /job harness/.
+results are managed by higher level software dubbed the /job harness/.
+Its primary purpose is to manage the complexity from the diversity of software.
 The harness also interfaces the jobs with the Laboratory Information
-Management System (LIMS) and with an /archive/ file system.  This note
+Management System (LIMS) and with the /archive/ file system.  This note
 describes the design of the job harness, its interaction with LIMS and
-the requirements it makes on the software that it runs.
-#+END_ABSTRACT
+the requirements that it makes on the software that it runs.
+(This note is version src_sh[:exports results]{git show-ref -s refs/heads/master}.)
+
 
 * Names and Terms
 
 Some elements of the system are given canonical identifiers.  These
 names are used, following a shared convention, by the job harness,
-LIMS and some supporting systems.  Things with canonical identifiers
-include:
+LIMS among other systems.  Things with canonical identifiers include:
 
- - unit type :: type of part, either a "CCD" or an "RTM" 
+ - unit type :: type of part, eg "CCD" or "RTM" 
 
  - unit id :: a brief but globally unique identifier for the unit (eg,
               the BNL CCD ID)
 
- - job name :: the name the software which implements for one unit of
-               processing (eg "station3")
+ - job name :: the name the software which implements one unit of
+               processing (eg "station3" or "ptc")
 
- - job version :: a human-readable string identifying the version of
-                  the software of its associated job.  It must match
+ - job version :: a brief label identifying the version of the
+                  software comprising the job's code.  It must match
                   an associated Git commit tag of the software that
                   the job runs.
 
- - site name :: the location running the tests (including non-production testing)
+ - site name :: the location running the tests (including those hosting development testing)
 
  - output directory :: a canonical pattern made up of other
       identifiers what describe the run of a job.
@@ -68,12 +71,21 @@ meaning in this note.
            analyzing output from another test.  
 
  - station :: a physical test device that generates data by taking
-              measurements of a unit either by human labor or by
+              measurements of a unit either by manual, human effort or by
               invoking a software process (ie, a job).
 
  - analysis :: a pure software test operating on the output files of
                another test and producing derived output files of its
                own.  Made up of one or more production jobs.
+
+ - job :: running one instance of a specific installed version of test
+          software on one unit (CCD/RTM).
+
+ - software :: the software provided by a test developer that implements a job.
+
+ - program :: an executable file (producer or validator, see below)
+              provided by an installed version of the software which
+              is called in the course of a job.
 
  - archive :: the root of a site-central, organized file-system
               hierarchy storing all result files of all jobs.
@@ -84,38 +96,37 @@ meaning in this note.
             prior jobs needed as input to the current job.
 
  - operator :: an identified individual charged with running a job
-               through the harness.
-
+               via the harness.
 
 
 * Cycle of Job Execution.
 
 The role of the job harness is described briefly in this section by
 breaking down the cycle of executing one job into a number of steps.
-Following sections contain some additional details.
+The following sections contain some additional details.
 
  - configuration :: the parameters to configure the job are determined
-                    and communicated to the harness.  See the section
-                    on [[Configuration]] for details.
+                    and communicated to the harness.  See the Section
+                    [[Configuration]] for details.
 
  - job ID allocation :: a unique identifier for the job is allocated
-      and any job dependencies are resolved.  See the section on 
+      and any job dependencies are resolved.  See the Section 
       [[Job Identifier Allocation]] for details.
 
  - job environment :: the job software run-time environment is
-      configured.  See the section on [[Job Environment]] for details.
+      configured.  See the Section [[Job Environment]] for details.
 
- - staging :: local file system is prepared for the job.  See the
-              section on [[File System]] for details.
+ - staging :: local file system is prepared for the job.  See 
+              Section [[File System]] for details.
 
  - running :: the software itself is run in two steps.  One producing
               the data and a follow up step that validates the data
               and prepares a summary in standard file formats.  See
-              the section on [[Production and Validation Steps]] for
+              the Section [[Production and Validation Steps]] for
               details.
 
  - archiving :: the resulting files from the job are copied to the
-                archive file system.  Again, see [[File System]] for details.
+                archive file system.  Again, see Section [[File System]] for details.
 
  - termination :: after an optional clean up of local files the
                   harness terminates.
@@ -127,35 +138,30 @@ Each invocation of the harness is parameterized.  Parameters may be
 set through a variety of means: environment, configuration files or
 user interface (command line) arguments.
 
-It is outside the scope of this document to state how the values of
-all input parameters are to be determined however it is expected that
-they will ultimately be derived from a LIMS database query or by
-knowledgeable experts.
-
 The configuration parameters are resolved in four ordered steps:
 
- 1) The run-time environment provides initial default parameters.
+ 1) The run-time environment may provide initial default parameters.
 
  2) Configuration files are checked and any parameters defined in
-    named =[DEFAULT]= will update the configuration.
+    a section named =[DEFAULT]= will update the configuration.
 
- 3) Command line (or user interface) arguments are applied to the
+ 3) User interface (eg command line) arguments are applied to the
     configuration.
 
- 4) The configuration files are checked again for any sections named
-    after an existing parameter and value
+ 4) The configuration files are checked again for any sections that
+    are named after an existing parameter name/value pair
 
 Specifics of each configuration step are given in the following sections.
 
 
-** Configuration through the environment
+** Configuration Through the Environment
 
 Configuration parameters may be specified with environment variables.
-A variable's name should be constructed by capitalizing the parameter
-name and prepending it with =LCATR_=.  Some of these variables are
-specified in a /modulefile/ as described in the section on [[Job Environment]].
+A parameter's variable name must be constructed by capitalizing the parameter
+name and prepending it with =LCATR_=.  Some of these variables may be
+specified in a /modulefile/ as described in Section [[Job Environment]].
 
-** Configuration files
+** Configuration Files
 
 Zero or more configuration files found in various locations will be
 read by the harness.  The files checked are:
@@ -176,11 +182,15 @@ like:
 unit_type = CCD
 #+end_example
 
+This could then be overridden via parameters set by the user
+interface.
+
 Second, after any command line parameters are applied (see below) the
 files are checked a second time for any sections that match the
 key/value name of any existing parameters.  For example a section
 named =[site BNL]= matches the parameter =site= with the value =BNL=
-and might define information about that site's archive
+and might it define information about that site's archive and the
+operator of the account in which the configuration file is placed.
 
 #+begin_example
 [site BNL]
@@ -194,37 +204,40 @@ Any parameters listed in the matching section and not yet set by
 another mechanism will be applied but they will not override any
 previously set parameters.  That is, this mechanism allows
 specification of a set of default parameters that may be activated
-based on the value of another parameter.
+based on the value of another parameter.  Setting any of these
+parameters via another means will override their settings here.
 
 ** User Interface Parameters
 
 The main Python =job.Job= class constructor accepts as keywords zero
 or more parameters.  The default, command line interface to the
-harness can likewise be given parameters with arguments like:
+harness can likewise be given parameters via arguments like:
 
 #+begin_example
---parameter=value
+--parameter_name=value
 #+end_example
 
-These user interface parameters will override any of the same names
-provided by the environment or by any =[DEFAULT]= sections of
-configuration files.
+This will set the parameter =parameter_name= to the value =value=.
+Setting parameters by via the user interface overrides any values that
+may have been set by other means.
 
 ** List of Configuration Parameters
 
 The configuration parameters understood by the harness are:
 
- - =context= :: an identifier formed by a combination of =site=,
-                =local= and =job=.
+ - =context= :: a convenience identifier formed by a combination of
+                =site=, =local= and =job=.  It may be used to organize
+                default parameters.
 
  - =site= :: a (canonical) identifier for a site.
 
- - =local= :: an identifier for the local computing environment
-              (machine) running the harness.
+ - =local= :: a convenience identifier for the local computing
+              environment (machine) running the harness.  It may be
+              used to organize default parameters.
 
  - =job= :: the (canonical) name for a job.
 
- - =version= :: a version string matching a Git tag used to make a
+ - =version= :: the job's version string matching a Git tag used to make a
                 release and installation of the software for a job.
 
  - =operator= :: the username of the account invoking the harness
@@ -232,17 +245,18 @@ The configuration parameters understood by the harness are:
  - =archive_root= :: the absolute path to the root of the archive file
                      system.
 
- - =archive_user= :: the username that can access a machine with
-                     =archive_root= mounted via SSH.
+ - =archive_user= :: the name of the user that has SSH access to the machine providing
+                     =archive_root=.
 
- - =archive_host= :: the host name of the computer that has the
-                     archive file system mounted.
+ - =archive_host= :: the host name of the computer providing the
+                     archive file system.
 
  - =stage_root= :: the absolute path to the root of the stage file
-                   system.
+                   system local to the computer running the job.
 
  - =dependencies= :: a colon-separated list of job name/version pairs
-                     on which the current job depends.
+                     on which the current job depends.  Note, this is
+                     for testing the harness independently from LIMS.
 
  - =modules_home= :: a local directory containing the installation of
                      Modules (specifically containing the =init/= sub
@@ -262,11 +276,12 @@ The configuration parameters understood by the harness are:
 
 Based on the input parameters and the allocated job ID the
 job-specific environment is configured.  This environment is defined
-through an Environment Module[fn:envmod] description file.  Besides
-job-specific environment the /modulefile/ must adhere to various
-conventions.  The software implementing a job must also be installed
-on the host in a manner that controls and records its version.
-Details on this are are in [[./modulefiles.org][a separate note]].  
+through an Environment Module[fn:envmod] description file called a
+/modulefile/.  Besides job-specific environment the /modulefile/ must
+adhere to various conventions in support of the job harness.  The
+software implementing a job must be installed on the host computer in
+a manner that controls and records its version.  Details on this are
+are in [[./modulefiles.org][a separate note]].
 
 [fn:envmod] See http://modules.sf.net/.
 
@@ -275,13 +290,14 @@ Details on this are are in [[./modulefiles.org][a separate note]].
 * File System
 
 All output files from production jobs are stored on disk in an
-organized file system hierarchy.  The full set of result files are
-centrally stored for each site in the /archive/ hierarchy.  Each time
-a job runs a local /stage/ is first populated as needed.  If a job
-requires as input the files output from a prior job they are copied to
-the local stage by the harness.  When the job runs it populates its
-own specific directory with any output.  If successful the harness
-copies the fresh results into the corresponding directory in the
+organized file system directory hierarchy.  The full set of result
+files are centrally stored for each site in the /archive/ directory
+hierarchy.  Each time a job runs a local /stage/ directory hierarchy
+is first populated as needed.  If a job requires as input the files
+output from a prior job they are copied to the local stage by the
+harness.  When the job runs it populates its own specific directory
+with any output files.  If the job is successful the harness copies
+the freshly produced results into the corresponding directory in the
 archive.
 
 ** File system layout
@@ -294,56 +310,55 @@ stage and, if the job succeeds, copied to the central site archive.
 
 The directory chain is named, in order, using the:
 
- - unit type
- - unit ID
- - job name
- - job version
- - job ID
+ - unit type (eg =CCD/=)
+ - unit ID (eg =1234/=)
+ - job name (eg =ptc/=)
+ - job version (eg =v42/=)
+ - job ID (eg =001234/=)
 
 The pattern describing the directory layout is shared by the job
-harness, the ingest process and any others that must locate a file.
-For the purpose of providing access to the files through its web
-interface LIMS must also know of the directory naming convention.
+harness, the ingest process, the LIMS web application and any others
+that must locate a file. 
 
 ** Staging and Archiving
 
-Before a job's production step runs the local stage file system is
-checked to assure the job's output directory does not yet exist.  The
-archive is checked to assure the existence of a directory associated
-for each job run on which the current one depends.  If these checks
-fail the harness aborts.  Otherwise the dependency directories are
-copied from the archive to their corresponding locations on the local
-stage and the job's output directory is created and becomes the
-harness's current working directory.  Likewise, after the validation
-step succeeds the job's directory and its contents is copied from the
-local stage to the archive.  This checking and copying are done over
-an SSH connection
+Before a job's production step runs (see below) the local stage file
+system is checked to assure the job's output directory does not yet
+exist.  The archive is checked to assure the existence of a directory
+associated with the run of each job on which the current job depends.
+If these checks fail the harness aborts.  Otherwise the dependency
+directories are copied from the archive to their corresponding
+locations on the local stage and the job's output directory is created
+and becomes the harness's current working directory.  Likewise, after
+the validation step succeeds the job's directory and its contents are
+copied from the local stage to the archive.  This checking and copying
+are done over an SSH connection
 
 
 * Production and Validation Steps
 
-The running the software is split into two steps.  A production step
-produces files of results in whatever formats convenient to the test
+The running of the software is split into two steps.  A production step
+produces files of results in whatever formats are convenient to the test
 software developer.  A followup validation step provides a hook to
 validate the content of these files and produce the required result
-summary and meta-data files in standard formats.
+summary and meta-data files in the standard formats.
 
 
 ** Job Production Step
 
-This step implements the main part of the job.  The step involves
-running a single program from a prepared and empty directory, logging
-any output and checking the return code (nonzero indicates failure).
-This program will typically be implemented as a thin script that glues
-into the job harness whatever other program or programs the test owner
-has developed.  The program to run is specified by the
-=LCATR_JOB_PRODUCER= environment variable that is set in the
-/modulefile/ corresponding to the installed job software release.
-When executed by the harness, the program is given no command line
-arguments.  Any input parameters it needs must be taken from the
-environment.  This includes the standard =LCATR_= variables defined
-through the configuration mechanism or software-specific variables
-defined in the /modulefile/.
+This step implements the main part of the job.  It involves running a
+single program from the prepared and empty output directory as
+described above, logging any output and checking the return code
+(nonzero indicates failure).  This program will typically be
+implemented as a thin script that glues into the job harness whatever
+code the test owner has developed.  The program
+to run is specified by the =LCATR_JOB_PRODUCER= environment variable
+that is set in the /modulefile/ corresponding to the installed job
+software release.  When executed by the harness, the program is given
+no command line arguments.  Any input parameters it needs must be
+taken from the environment.  This includes the standard =LCATR_=
+variables defined through the configuration mechanism and any
+software-specific variables defined in the /modulefile/.
 
 With these requirements satisfied the program must otherwise fulfill
 whatever duties it was written for and produce whatever result files
@@ -360,13 +375,15 @@ arguments.  It is run from the same directory as was the producer and
 any output it creates is logged.  It too must return a nonzero error
 code to indicate failure.
 
-In addition the validation program must produce a single meta-data
-file (called =metadata.fits=) and one or more results summary files in
+In addition to performing whatever validation is required by the test
+developer the validation program must produce a single meta-data file
+(called =metadata.fits=) and one or more results summary files in
 formats and schema specific to the job.  These two files will
-eventually be ingested into the LIMS database.  Details of these file
-formats, schema and validations are in the note "[[./schema.org][LSST CCD Acceptance
-Testing File Schema]]".
-
+eventually be loaded into the LIMS database by the LIMS ingest process
+described elsewhere.  Details of these file formats, schema and
+validations are in the note "[[./schema.org][LSST CCD Acceptance Testing File Schema]]".
+The harness will run the validation routines associated with each
+file's schema.
 
 * LIMS
 
@@ -374,11 +391,13 @@ The Laboratory Information Management System (LIMS) is briefly
 described in this section with an emphasis on how it interfaces with
 the harness.  Additional details on LIMS can be found elsewhere.
 
-LIMS captures all meta data and some result data about all tests done
-on a CCD (or RTM) unit.  It provides a database containing the test
-history, current status and eventual acceptance judgment of each unit.
-It is fronted with a web application that allows browsing and querying
-of the database.
+In addition to its other duties not directly related to the job
+harness, LIMS captures all meta data and a summary of result data
+about all tests done on a CCD (or RTM) unit.  It provides a database
+containing the test history, current status and the eventual
+acceptance judgment of each unit based on the test results.  It is
+fronted with a web application that allows browsing and querying of
+the database.
 
 The following sections describe how the job harness interfaces with
 LIMS.
@@ -386,8 +405,8 @@ LIMS.
 ** Job Identifier Allocation
 
 Every production run of a job is given a site-unique identifier (job
-ID).  This job ID is allocated through LIMS via an HTTP query by
-registering the following information:
+ID).  This job ID is allocated through LIMS via an HTTP query which
+registers the following information:
 
  - site name :: canonical name of the testing site
 
@@ -401,10 +420,10 @@ registering the following information:
 
  - operator :: user name of the account running the harness
 
-LIMS replies with the job ID and information about other jobs, if any,
-that this job requires to have successfully produced results.  The
-dependency information includes the job IDs and the registration
-information for previously completed jobs.
+LIMS replies to the query with the job ID.  If the job requires data
+produced by other, prior jobs the query will also return the
+registered information about those jobs necessary to locate their
+output files.
 
 
 ** Job Status Bookkeeping.
@@ -412,7 +431,8 @@ information for previously completed jobs.
 Among its other duties, LIMS records the status of jobs as reported to
 it by the job harness.  This status progresses through a series of
 states starting with the registration described above.  All subsequent
-states are recorded by providing the allocated job ID.
+states are recorded by providing the allocated job ID and  state
+identifier from the following list.
 
  - registered :: as above
 
