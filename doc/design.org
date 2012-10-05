@@ -281,7 +281,8 @@ through an Environment Module[fn:envmod] description file called a
 adhere to various conventions in support of the job harness.  The
 software implementing a job must be installed on the host computer in
 a manner that controls and records its version.  Details on this are
-are in [[./modulefiles.org][a separate note]].
+available elsewhere.
+
 
 [fn:envmod] See http://modules.sf.net/.
 
