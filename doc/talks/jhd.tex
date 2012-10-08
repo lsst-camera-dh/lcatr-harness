@@ -1,0 +1,90 @@
+\documentclass[xcolor=dvipsnames]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fixltx2e}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage{soul}
+\usepackage{textcomp}
+\usepackage{marvosym}
+\usepackage{wasysym}
+\usepackage{latexsym}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{cancel}
+\usepackage[percent]{overpic}
+\usepackage{listings}
+\usepackage{color}
+\lstset{ %
+  language=Python,
+  basicstyle=\ttfamily\tiny,
+  emphstyle=\color{red},
+  keywordstyle=\color{black}\bfseries,
+  identifierstyle=\color{DarkOrchid}\ttfamily,
+  commentstyle=\color{Brown}\rmfamily\itshape,
+  stringstyle=\color{blue}\slshape,
+  showstringspaces=false,
+  frame=single,                   % adds a frame around the code
+}
+
+\setbeamertemplate{navigation symbols}{}
+\useoutertheme{infolines}
+\usecolortheme[named=violet]{structure}
+\setbeamertemplate{items}[circle]
+
+\DeclareGraphicsExtensions{.pdf,.png,.jpg}
+\title[Job Harness]{LCATR Job Harness Design and Status}
+\author{Brett Viren}
+\institute[BNL]
+{
+  Physics Department
+
+  \includegraphics[height=1.5cm]{bnl-logo}
+}
+
+\date{\today}
+
+\definecolor{rootpink}{RGB}{255,0,255}
+\definecolor{macroyellow}{RGB}{255,215,0}
+
+\hypersetup{
+  pdfkeywords={},
+  pdfsubject={},
+  pdfcreator={pdflatex, beamer and emacs the digital blood, sweat and tears}}
+
+\begin{document}
+
+\maketitle
+
+\begin{frame}
+\frametitle{Outline}
+\tableofcontents
+\end{frame}
+
+\section{Context}
+
+\begin{frame}
+  \frametitle{}
+\end{frame}
+
+\section{Design}
+
+\subsection{Job Execution Cycle}
+
+\subsection{Job Harness Configuration}
+
+\subsection{Job Environment}
+
+\subsection{File System Organization and Preparation}
+
+\subsection{Job Data Production and Validation Steps}
+
+\subsection{Interaction With LIMS}
+
+\section{Status}
+
+\end{document}
+
+
