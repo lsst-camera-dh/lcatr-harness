@@ -72,12 +72,18 @@
 
   The job harness:
   \begin{itemize}
-  \item Runs a job that implements a portion or the whole of some
-    CCD/RTM ``test'' (a station run or an analysis).
-  \item Specify and capture software version, input parameters and
-    run-time environment.
-  \item Provides a uniform interface to the operators running tests.
-  \item Assure any required output from other tests is available for
+  \item Runs a \textbf{job} that implements a portion or the whole of
+    some CCD/RTM \textbf{test}.  For example jobs that implement:
+    \begin{itemize}
+    \item all of or a portion of one station's measurements
+    \item an analysis of a station's output or that of another analysis
+    \item reformatting of high-bit FITS images to thumbnails for web display
+    \item combining or comparisons of results across a number of tests
+    \end{itemize}
+  \item Specify and capture the software version, input parameters and
+    run-time environment of a job.
+  \item Provides a uniform user interface to the operators running jobs.
+  \item Assure that any required output from other tests is available for
     input to the current one.
   \item Assure output results are validated and secured in an
     organized archive.
@@ -87,17 +93,19 @@
 \begin{frame}
   \frametitle{Terminology}
   \begin{description}
-  \item[Unit] CCD a or an RTM
-  \item[Test] Some evaluation of a unit that produces data.
+  \item[Unit] a CCD or an RTM
+  \item[Test] some evaluation of a unit that produces data.
     \begin{description}
-      \item[Station] hardware/software/human based measurement test
-      \item[Analysis] pure software based test
+      \item[Station] hardware/software/human based measurement
+      \item[Analysis] pure software derived result
     \end{description}
-  \item[Job] a software portion or sub-part of a test that can be run atomically
-  \item[Program] an executable from the test software that implements a job
-  \item[Archive] a site-central file system storing all results in an organized manner
+  \item[Job] a software-only, portion or the whole of a test that can
+    be run atomically and once started run non-interactively
+  \item[Program] an executable from the test software that implements the job
+  \item[Archive] a site-central file system storing all results in an
+    organized directory hierarchy
   \item[Stage] a portion of the archive copied to the test host
-    computer and accepting output of a running job.
+    computer and which accepts output of a running job.
   \end{description}
 \end{frame}
 
@@ -115,19 +123,6 @@
 \end{frame}
 
 \begin{frame}
-  \frametitle{Interface with LIMS}
-  \begin{center}
-    \includegraphics[width=0.8\textwidth]{lims-interaction}    
-  \end{center}
-  \begin{itemize}
-  \item LIMS web app big-picture and per unit status to operators
-  \item Job harness instances run by operator, updates status with LIMS
-  \item Ingest process parses standardized \textit{metadata} and
-    \textit{results summary} files into LIMS
-  \end{itemize}
-\end{frame}
-
-\begin{frame}
   \frametitle{Multiple Test Sites}
   \begin{center}
     Sites operate as symmetric peers with uncoupled replication.    
@@ -141,14 +136,14 @@
     \item Site database is writable only by site LIMS web application instance
     \item Every site copies (MySQL replication) other sites' database in read-only manner
     \end{itemize}
-  \item[Archive] directory structure holding results
+  \item[Archive] disk area holding all result files produced at the site
     \begin{itemize}
-    \item Writable only by local job harness.
-    \item Every site copies (rsync) other sites' archive in read-only manner
+    \item Writable only by local job harness runs.
+    \item Every other site may copy (rsync) other sites' archive
     \end{itemize}
-  \item[Code repositories] for LIMS, job harness, test software
+  \item[Code repositories] for LIMS app, job harness related and test software itself
     \begin{itemize}
-    \item Local clones periodically pull updates.
+    \item Local Git clones with periodic pulls
     \end{itemize}
   \end{description}
 
@@ -169,20 +164,20 @@
   \frametitle{Job Execution Cycle}
   Harness executes through these steps, in order:
   \begin{description}
-  \item[configuration] input parameters and context-specific static configuration
-  \item[registration] parameters registered with LIMS, unique job
+  \item[configuration:] input parameters and context-specific static configuration
+  \item[registration:] parameters registered with LIMS, unique job
     ID allocated, dependencies resolved.
     % fixme: fix this label in the text
-  \item[environment] run-time environment configured via the job's \textit{modulefile}
-  \item[staging] any input file dependencies copied to the local stage
-  \item[running] the test software is run in two steps
+  \item[environment:] run-time environment configured via the job's \textit{modulefile}
+  \item[staging:] any input file dependencies copied to the local stage
+  \item[running:] the test software is run in two steps:
     \begin{enumerate}
-    \item data production program run
-    \item validation and \textit{metadata} and \textit{summary result}
-      files produced
+    \item data production (primary part of the test software) program is run
+    \item validation and production of \textit{metadata} and
+      \textit{summary result} files
     \end{enumerate}
-  \item[archiving] results are copied to archive
-  \item[termination] optional clean up and final termination
+  \item[archiving:] results are copied to archive
+  \item[termination:] optional clean up and final termination
   \end{description}
   LIMS is notified of the completion of these steps.
 \end{frame}
@@ -210,18 +205,21 @@
   \frametitle{Configuration Parameters}
   Main parameters:
   \begin{description}
-  \item[lims\_port] specify LIMS port (allows for production, testing, development)
+  \item[lims\_port] specify LIMS port (different access for
+    production, testing and development instances)
   \item[job] the (canonical) name for a job.
   \item[version] job version string (Git tag)
   \item[operator] the username of the account invoking the harness
   \item[archive\_root] absolute path to the root of the archive file system.
-  \item[archive\_user] the name of the user that has SSH access to the machine providing
-  \item[archive\_host] the host name of the computer providing the
+  \item[archive\_user] user that has SSH access to the machine providing
+  \item[archive\_host] name of the computer providing the
     archive file system.
   \item[stage\_root] the absolute path to the root of the stage file
     system local to the computer running the job.
+  \item[...] others
+
   \end{description}
-  Other settings are available.
+
 \end{frame}
 
 
@@ -230,7 +228,7 @@
 \begin{frame}
   \frametitle{Specifying a Job and its Environment Module}
   
-  A job is uniquely identified by its:
+  A job's software is uniquely identified by its:
 
   \begin{description}
   \item[name] A canonical name for the job
@@ -240,14 +238,16 @@
   These are associated with:
 
   \begin{itemize}
-  \item A specific commit of the test software in Git
+  \item A specific commit of the software in Git
   \item An installed instance of this software
   \item Specific executable programs provided by the installation
   \item Any special environment settings needed by the software
   \item Environment in support of the Job Harness
   \end{itemize}
 
-  via an \textit{Environment Module}.
+  via an \textit{Environment Module} file (\textit{modulefile}).
+
+  \vspace{5mm}
 
   \textbf{NB:} This association relies on the site's software
   manager(s) to correctly construct the \textit{modulefile}.  Where
@@ -259,19 +259,24 @@
 \begin{frame}
   \frametitle{Environment Modules}
 
-  What are Environment Modules\footnote{\url{http://modules.sf.net/}}?
+  What are Environment Modules?
+
+  \begin{center}
+    \url{http://modules.sf.net/}
+  \end{center}
     
   \begin{itemize}
   \item describe run-time environment in shell-neutral language
     \begin{itemize}
     \item write a \textit{modulefile} (in TCL) for each version of each job type
     \end{itemize}
-  \item normally used to modify a user's shell environment to introduce packages
+  \item normally used to modify a user's shell environment to
+    introduce new packages built from source
     \begin{itemize}
-    \item the job harness loads \textit{modulefile} from \textbf{Python}
+    \item the job harness loads the \textit{modulefile} from \textbf{Python}
     \end{itemize}
   \item allow simple dependencies resolution between versioned modules
-  \item assure uniform behavior via a shared library of functions
+  \item assure uniform behavior via a common library of functions
   \end{itemize}
 
   Modules are used to manage user environment at some major facilities
@@ -303,11 +308,62 @@
 \subsection{Job Data Production and Validation Steps}
 
 \begin{frame}
+  \frametitle{Running the actual test software}
+
+  Two step process:
+  \begin{description}
+  \item[Production] implements the job's primary intention
+    \begin{itemize}
+    \item Typically a thin script wrapping one or more programs
+    \item Produces output files in whatever form is natural
+    \end{itemize}
+  \item[Validation] validates and formats the results
+    \begin{itemize}
+    \item Runs any job-specific validation code
+    \item Must produce \textit{metadata} and \textit{results summary}
+      files in standardized format/schema
+    \item Job harness runs associated validation code on these standard
+      files.
+    \end{itemize}
+  \end{description}
+
+  For both, standard out/err is logged and a zero return code is used to
+  indicate success to the calling harness.
+
 \end{frame}
 
 \subsection{Interaction With LIMS}
 
 \begin{frame}
+  \frametitle{Interface with LIMS}
+  \begin{center}
+    \includegraphics[width=0.8\textwidth]{lims-interaction}    
+  \end{center}
+  \begin{itemize}
+  \item LIMS web app gives big-picture and per unit status to operators
+  \item Job harness instances run by operator, updates status with LIMS
+  \item Ingest process parses standardized \textit{metadata} and
+    \textit{results summary} files into LIMS
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Use LIMS for: Job ID Allocation, Dependency Resolution and Status Updates}
+
+  \begin{description}
+  \item[Job ID] Allocated through LIMS by registering job input
+    parameters.  ID is unique to the instance of LIMS and used to
+    track the job from them on.
+  \item[Dependencies] LIMS also returns information about any other
+    jobs on which the current job depends.  This information is used
+    to resolve archive paths so they can be copied to the local stage
+    and be available to the job.
+  \item[Status] The Job Harness registers status updates with LIMS:
+    \code{registered}, \code{configured}, \code{staged},
+    \code{produced}, \code{validated}, \code{archived}, \code{purged}
+    (and finally the ingest process records \code{ingested}).
+  \end{description}
+
 \end{frame}
 
 \section{Status}
@@ -316,7 +372,55 @@
  \tableofcontents[currentsection,hideothersubsections]
 \end{frame}
 
-\section{Open Issues}
+\begin{frame}
+  \frametitle{Status of this Stuff}
+  \begin{description}
+  \item[schema] \textit{metadata} and \textit{results summary} files
+    \begin{itemize}
+    \item format chosen (FITS) and schema implementation (based on
+      pyfits) started
+    \item one prototype result implemented
+    \item draft tech note and reference docs (Sphinx) online
+    \end{itemize}
+  \item[harness] basic design and interaction with LIMS understood
+    \begin{itemize}
+    \item harness code partially implemented and tested on Linux
+    \item MS Windows test (virtual) machine installed and ready
+    \item draft tech note online
+    \end{itemize}
+  \item[modulefiles] selected to specify/provide job environment
+    \begin{itemize}
+    \item brief evaluation of roll-our-own Python implementation
+    \item initial prototype \textit{modulefiles} developed
+    \item some utility TCL functions started but still working on
+      minimizing required boilerplate
+    \end{itemize}
+  \end{description}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Some Links}
+
+  \begin{description}
+  \item[Online] code, tech notes, reference docs and my working area:\\
+    \url{http://www.phy.bnl.gov/~bviren/lsst/lcatr/}
+  \item[Git] repository collections:
+    \url{https://git.racf.bnl.gov/astro/cgit/lcatr/}
+    \url{http://dev.lsstcorp.org/cgit/LSST/Camera/lcatr/}
+  \end{description}
+
+  \vspace{1cm}
+  \footnotesize
+  Notes:
+  \begin{itemize}
+  \item In each look for \code{schema/}, \code{harness/} and
+    \code{modulefiles} subdirs
+  \item RACF Git currently requires RACF credentials.  LSST Corp's are
+    mirrors.
+  \end{itemize}
+\end{frame}
+
+\section{Some Issues for Discussion}
 
 \begin{frame}
  \tableofcontents[currentsection,hideothersubsections]
@@ -339,10 +443,10 @@
 \end{frame}
 
 \begin{frame}
-  \frametitle{Use this for Full-Camera Tests?}
+  \frametitle{Use of LIMS / Job Harness beyond CCD testing?}
 
-  Can we use all or some of LIMS / Job Harness system for full-camera
-  testing?  Maybe.  No objections here, but:
+  Can we use all or some of LIMS / Job Harness system beyond
+  sensor-level testing?  Maybe.  No objections here, but:
 
   \begin{itemize}
   \item Focus is now on the more immediate CCD/RTM testing needs.
@@ -352,7 +456,9 @@
     \item Requirements for full camera testing are unknown (by me at least)
     \item Effort not identified to increase the scope at this time.
     \end{itemize}
-    
+  \item What about slice-tests that may require CCS?  My understanding
+    is CCS would run as run as (or be couched into) a job running
+    under the harness.
   \end{itemize}
 
 \end{frame}
