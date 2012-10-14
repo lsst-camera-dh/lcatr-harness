@@ -19,6 +19,7 @@ def guess_modules_thing(thing, bases = guessed_bases):
         path = os.path.join(base,thing)
         path = os.path.expandvars(path)
         paths = glob(path)
+        #print path,paths
         if not paths: 
             continue
         paths.sort()
@@ -32,7 +33,10 @@ def guess_modules_home():
     mh = os.environ.get('MODULESHOME')
     if mh: return mh
 
-    got = guess_modules_thing('init')
+    trial = list(guessed_bases)
+    trial += ['/usr/share/modules'] # debian
+
+    got = guess_modules_thing('init', trial)
     if not got: return None
     return os.path.dirname(got)
         
@@ -44,6 +48,7 @@ def guess_modules_cmd():
     mh = os.environ.get('MODULESHOME')
     if mh: trial.append(os.path.join(mh,'bin/modulecmd'))
     trial += guessed_bases
+    trial += ['/usr']       # debian
     return guess_modules_thing('bin/modulecmd', trial)
     
 def guess_modules_version():
@@ -51,7 +56,10 @@ def guess_modules_version():
     if mv: return mv
     got = guess_modules_thing('')
     if not got: return None
-    return os.path.basename(got)
+    if got[-1] == '/': got = got[:-1]
+    ver = os.path.basename(got)
+    #print 'got ver:%s from:%s'%(ver,got)
+    return os.path.basename(ver)
 
 def guess_modules_path():
     mp = os.environ.get('MODULEPATH')
@@ -217,7 +225,6 @@ class Modules(object):
         # on us.
         shcmds = self.command('sh', cmd, mod_name, *args)
 
-
         for line in shcmds.split(';'):
             line = line.strip()
             if not line: continue
@@ -236,9 +243,24 @@ class Modules(object):
         return
     
     def __getattr__(self, cmd):
-        if not cmd in ['load','add','unload','rm']: 
-            return self.__dict__[cmd]
-        return lambda name, *args: self.do_cmd(cmd, name, *args)
+        if cmd in ['load','add','unload','rm']: 
+            return lambda name, *args: self.do_cmd(cmd, name, *args)
+        var = cmd
+        if self.__dict__.has_key(var):
+            return self.__dict__[var]
+        var = cmd.upper()
+        if self.__dict__.has_key(var):
+            return self.__dict__[var]
+        raise KeyError,cmd
+
+
+    def execute(self, cmdstr, out = None):
+        '''
+        Execute the command string in the environment.
+        '''
+        import commands
+        return commands.execute(cmdstr, self.env, out)
+        
 
     pass
 

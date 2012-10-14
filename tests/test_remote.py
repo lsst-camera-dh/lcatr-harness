@@ -47,8 +47,18 @@ def test_rstat_success():
     return
     
 
+def test_rsync():
+    import tempfile
+    here = os.path.realpath(os.path.dirname(__file__))
+    src = 'localhost:' + here
+    dst = tempfile.mkdtemp()
+    remote.rsync(src,dst)
+    print '%s --> %s' % (src, dst)
+    return
+
 if __name__ == '__main__':
     
-    #test_rhostname()
+    test_rhostname()
     test_rstat_success()
     test_rstat_failure()
+    test_rsync()

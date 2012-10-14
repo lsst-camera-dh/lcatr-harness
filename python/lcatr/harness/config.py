@@ -135,6 +135,12 @@ class Config(object):
 
         return
 
+    def s(self, string):
+        '''
+        Interpolate a string using the parameters.
+        '''
+        return string % self.__dict__
+
     def guess_site(self):
         if hasattr(self,'site'): return self.site
         fqdn = socket.gethostbyaddr(socket.gethostname())[0]

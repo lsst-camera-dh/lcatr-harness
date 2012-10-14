@@ -353,7 +353,7 @@ described above, logging any output and checking the return code
 (nonzero indicates failure).  This program will typically be
 implemented as a thin script that glues into the job harness whatever
 code the test owner has developed.  The program
-to run is specified by the =LCATR_JOB_PRODUCER= environment variable
+to run is specified by the =LCATR_PRODUCER= environment variable
 that is set in the /modulefile/ corresponding to the installed job
 software release.  When executed by the harness, the program is given
 no command line arguments.  Any input parameters it needs must be
@@ -371,7 +371,7 @@ in whatever format the software developer has determined.
 From the point of view of the harness, this step is essentially the
 same as the production step and only differs in what it is expected to
 accomplish.  Again a single program, as specified by the
-=LCATR_JOB_VALIDATOR= variable, is executed with no command line
+=LCATR_VALIDATOR= variable, is executed with no command line
 arguments.  It is run from the same directory as was the producer and
 any output it creates is logged.  It too must return a nonzero error
 code to indicate failure.

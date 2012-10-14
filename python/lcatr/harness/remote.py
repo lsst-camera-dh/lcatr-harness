@@ -9,7 +9,19 @@ import subprocess
 
 ssh_command = "ssh"             # rely on it being in PATH
 
-def cmd(cmd, host = "localhost", user = os.environ.get('USER')):
+def command(cmdstr):
+    '''
+    Run a command return (status,out,err)
+    '''
+    proc = subprocess.Popen(cmdstr, shell=True, 
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out,err = proc.communicate()
+    status = proc.poll()
+    if status == 255: 
+        raise RuntimeError,'SSH cmd "%s" failed.' % (cmdstr)
+    return status,out,err
+
+def cmd(cmdstr, host = "localhost", user = os.environ.get('USER')):
     '''
     Run cmd on remote as user@host via SSH.
 
@@ -18,17 +30,10 @@ def cmd(cmd, host = "localhost", user = os.environ.get('USER')):
     If a failure at the SSH level (SSH return code 255) occurs
     RuntimeError is raised.
     '''
-    if isinstance(cmd,list): cmd = ' '.join(cmd)
+    if isinstance(cmdstr,list): cmdstr = ' '.join(cmdstr)
 
-    sshcmd = "%s %s@%s %s" % (ssh_command, user, host, cmd)
-
-    proc = subprocess.Popen(sshcmd, shell=True, 
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out,err = proc.communicate()
-    status = proc.poll()
-    if status == 255: 
-        raise RuntimeError,'SSH cmd "%s" failed.' % (sshcmd)
-    return status,out,err
+    sshcmd = "%s %s@%s %s" % (ssh_command, user, host, cmdstr)
+    return command(sshcmd)
 
 def stat(path, host = "localhost", user = os.environ.get('USER')):
     '''
@@ -37,5 +42,13 @@ def stat(path, host = "localhost", user = os.environ.get('USER')):
     See cmd() for return values. 
     '''
     return cmd("stat %s" % path,host,user)
+
+
+def rsync(src,dst):
+    '''
+    Copy a remote file/dir "src" to a destination "dst".
+    '''
+    cmdstr = "rsync -a %s %s" % (src, dst)
+    return command(cmdstr)
 
 

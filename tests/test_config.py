@@ -74,7 +74,11 @@ def test_missing():
     c = config.Config(filename=cfgfile)
     #print c.missing()
     #print c.extra()
-    assert c.missing() == ['job_id', 'stamp', 'stage_root', 'unit_id', 'localjob', 'modules_version', 'version', 'context', 'operator', 'modules_home', 'modules_cmd', 'modules_path']
+    assert c.missing() == [
+        'job_id', 'stamp', 'stage_root', 'unit_id', 'localjob', 
+        'modules_version', 'version', 'context', 'operator', 
+        'modules_home', 'modules_cmd', 'modules_path'
+        ]
     assert c.extra() == ['unknown_parameter']
     return
 
