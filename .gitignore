@@ -3,3 +3,11 @@
 *.html
 *.pdf
 *.tex
+*.eps
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.fdb_latexmk

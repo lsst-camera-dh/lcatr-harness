@@ -47,7 +47,7 @@ class Job(object):
 
     def __init__(self, cfg):
         '''
-        Create a test job.
+        Create a test job with a config.Config object
         '''
         if not cfg.complete(Job.required_parameters):
             raise ValueError,'Given incomplete configuration, missing: %s' % \
