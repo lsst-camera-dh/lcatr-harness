@@ -5,8 +5,7 @@ LSST CCD Acceptance Testing Running of Jobs
 '''
 
 import os
-import remote, environment
-
+from lcatr.harness import remote, environment, lims, util
 
 class Job(object):
     '''
@@ -42,8 +41,11 @@ class Job(object):
         'archive_user', # Login name of user that can write to archive
         'unit_type',    # type of unit (eg, CCD/RTM)
         'unit_id',      # The unique unit identifier
-        #'job_id',       # The unique job identifer, is figured out here
         ]
+
+
+    all_steps = ['configure','register','stage','produce','validate', 'archive','purge']
+
 
     def __init__(self, cfg):
         '''
@@ -65,18 +67,19 @@ class Job(object):
         If no steps are given all are run.
         '''
         if not steps:
-            steps = ['configure','register','stage','produce','validate',
-                     'archive','purge']
+            steps = self.all_steps
         if isinstance(steps, str):
             steps = [steps]
         for step in steps:
+            #print 'Step: "%s"' % step
             meth = eval("self.do_%s" % step)
             try:
                 meth()
             except Exception,err:
-                lims.notify_failure(self.jobid, err)
+                if self.lims: self.lims.notify_failure(err)
+                raise
             else:
-                lims.notfy_status(self.jobid, step)
+                if self.lims: self.lims.notify_status(step)
             continue
         return
             
@@ -98,16 +101,17 @@ class Job(object):
         env.update(newenv)
 
         em = environment.Modules(env)
-        em.setup(cfg.modules_home, cfg.modules_cmd, 
-                 cfg.modules_version, cfg.modules_path)
-        modfile = os.path.join(cfg.job, cfg.version)
+        em.setup(self.cfg.modules_home, self.cfg.modules_cmd, 
+                 self.cfg.modules_version, self.cfg.modules_path)
+        modfile = os.path.join(self.cfg.job, self.cfg.version)
+        print 'Loading modfile: "%s"' % modfile
         em.load(modfile)
         self.em = em
         return
 
     def do_register(self):
         'Initial registering with lims.'
-        self.lims = lims.Register(**self.cfg.__dict__)
+        self.lims = lims.register(**self.cfg.__dict__)
         return
 
     def stage_in(**depinfo):
@@ -120,18 +124,18 @@ class Job(object):
 
     def do_stage(self):
         'Ready the stage.'
-        for depinfo in self.deps:
+        for depinfo in self.lims.dependencies(): 
             self.stage_in(**depinfo)
         return
 
     def do_produce(self):
         out = util.file_logger('producer')
-        self.em.execute(self.em.lcatr_producer, out=out)
+        self.em.execute(self.em.lcatr_producer, out=out.info)
         return
 
     def do_validate(self):
         out = util.file_logger('validator')
-        self.em.execute(self.em.lcatr_validator, out=out)
+        self.em.execute(self.em.lcatr_validator, out=out.info)
         self.followup_validation()
         return
 

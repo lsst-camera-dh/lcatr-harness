@@ -24,7 +24,7 @@ def guess_modules_thing(thing, bases = guessed_bases):
             continue
         paths.sort()
         return paths[-1]
-    return None
+    return ""
 
 def guess_modules_home():
     '''
@@ -37,7 +37,7 @@ def guess_modules_home():
     trial += ['/usr/share/modules'] # debian
 
     got = guess_modules_thing('init', trial)
-    if not got: return None
+    if not got: return ""
     return os.path.dirname(got)
         
 def guess_modules_cmd():
@@ -55,7 +55,7 @@ def guess_modules_version():
     mv = os.environ.get('MODULE_VERSION')
     if mv: return mv
     got = guess_modules_thing('')
-    if not got: return None
+    if not got: return ""
     if got[-1] == '/': got = got[:-1]
     ver = os.path.basename(got)
     #print 'got ver:%s from:%s'%(ver,got)
@@ -64,7 +64,15 @@ def guess_modules_version():
 def guess_modules_path():
     mp = os.environ.get('MODULEPATH')
     if mp: return mp
-    return None
+
+    path = __file__.split('/')
+    if len(path) > 5:
+        mpath = '/'.join(path[:-5] + ['modulefiles'])
+        if os.path.exists(mpath):
+            return mpath
+
+    return ""
+
 
 
 def resolve_modulepath(home, env = None, modpath = None):
@@ -197,6 +205,10 @@ class Modules(object):
         else:
             args = list(args)
         cmd = [self.cmdstr, flavor] + args
+        print 'Running command: (%s) "%s"' % (type(cmd),cmd)
+        #print '\n'.join(['(%s)%s=(%s)%s'%(type(k),k,type(v),v) for k,v in self.env.iteritems()])
+        for k,v in self.env.iteritems():
+            assert type(k) == str and type(v) == str, 'bad: %s:%s'%(k,v)
         proc = subprocess.Popen(cmd,
                                 stdout = subprocess.PIPE,
                                 stderr = subprocess.PIPE,
@@ -246,11 +258,11 @@ class Modules(object):
         if cmd in ['load','add','unload','rm']: 
             return lambda name, *args: self.do_cmd(cmd, name, *args)
         var = cmd
-        if self.__dict__.has_key(var):
-            return self.__dict__[var]
+        if self.env.has_key(var):
+            return self.env[var]
         var = cmd.upper()
-        if self.__dict__.has_key(var):
-            return self.__dict__[var]
+        if self.env.has_key(var):
+            return self.env[var]
         raise KeyError,cmd
 
 

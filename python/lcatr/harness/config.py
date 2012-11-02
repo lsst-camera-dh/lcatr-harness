@@ -38,18 +38,23 @@ class Config(object):
         
         'context',    # A context, meta parameter used to define others
         'site',       # The (canonical or a test) name for a site
-        'local'       # Name for a local environment, used to define others
+        'local',      # Name for a local environment, used to define others
         'job',        # Canonical name of the job
         'version',    # Test software version string (git tag) 
         'operator',   # User name of person operating/running the test
         'stamp',      # A time_t seconds stamping when job ran
-        'stage_root', # The LCATR_ROOT on local machine
+        'stage_root',   # The LCATR_ROOT on local machine
         'archive_root', # The LCATR_ROOT base of the archive
         'archive_host', # The name of the machine hosting the archive
         'archive_user', # Login name of user that can write to archive
         'unit_type',    # type of unit (eg, CCD/RTM)
         'unit_id',      # The unique unit identifier
-        'job_id',       # The unique job identifer
+        'job-id',       # The unique job identifer
+
+        'modules_home',         # guessed 
+        'modules_version',      # by the
+        'modules_cmd',          # environment
+        'modules_path',         # module
         ]
 
     # These are required but are allowed to be guessed in the code if
@@ -86,12 +91,11 @@ class Config(object):
         files = list(Config.default_config_files)
         for what in ['config','configs','filename','filenames']:
             fn = kwds.get(what)
-            if fn:
-                if isinstance(fn,str): 
-                    fn = [fn]
-                files += fn
-                del kwds[what]
-                pass
+            if not fn: continue
+            if isinstance(fn,str): 
+                fn = [fn]
+            files += fn
+            del kwds[what]
             continue
         #print 'Trying files:',' '.join(files)
         used = scp.read(files)
@@ -154,7 +158,7 @@ class Config(object):
 
     def guess_stamp(self):
         if hasattr(self,'stamp'): return self.stamp
-        self.stamp = time.time()
+        self.stamp = str(time.time())
         return self.stamp
 
     def guess_stage_root(self):

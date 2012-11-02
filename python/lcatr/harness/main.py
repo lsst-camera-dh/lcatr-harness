@@ -17,20 +17,19 @@ def cmdline(args):
 
     for par in config.Config.required_parameters:
         flag = '--' + par.replace('_','-')
-        parser.add_argument(flag, default = None)
+        parser.add_argument(flag, default = "")
 
     parser.add_argument('steps', nargs="*")
 
-    opt = parser.parse_args(args)
+    optarg = parser.parse_args(args)
 
     steps = None
-    if opt.steps:
-        steps = opt.steps
-        del (opt.steps)
-
     kwds = {}
-    for opt,arg in opt.__dict__.iteritems():
-        if arg is None: continue
+    for opt,arg in optarg.__dict__.iteritems():
+        if not arg: continue
+        if opt == "steps":
+            steps = arg
+            continue
         kwds[opt] = arg
 
     cfg = config.Config(**kwds)

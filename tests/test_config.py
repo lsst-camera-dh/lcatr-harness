@@ -72,14 +72,13 @@ def test_incomplete():
     
 def test_missing():
     c = config.Config(filename=cfgfile)
-    #print c.missing()
-    #print c.extra()
-    assert c.missing() == [
-        'job_id', 'stamp', 'stage_root', 'unit_id', 'localjob', 
-        'modules_version', 'version', 'context', 'operator', 
-        'modules_home', 'modules_cmd', 'modules_path'
-        ]
-    assert c.extra() == ['unknown_parameter']
+    missing = set(c.missing())
+    missed = set(['context', 'version', 'job_id', 'localjob', 'unit_id'])
+    assert missing == missed, "Unexpected missing: %s != %s" % (missing,missed)
+
+    e1 = set(c.extra())
+    e2 = set(['unknown_parameter'])
+    assert e1 == e2, "Unexpected extra: %s != %s" %(e1,e2)
     return
 
 if __name__ == '__main__':

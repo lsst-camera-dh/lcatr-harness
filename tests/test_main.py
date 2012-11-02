@@ -12,7 +12,9 @@ def test_cmdline():
     main.cmdline(['--config', cfgfile,
                   '--context','UNITTEST',
                   '--unit-id','4-1201',
-                  'configure'])
+                  '--job-id','0',   # fixme: need to reslolve externally
+                  '--job', 'fake']) # version resolved in config file
+
 
 if '__main__' == __name__:
     test_cmdline()

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 Interface with LIMS
 '''
@@ -38,3 +39,37 @@ class RPC(object):
     pass
 
         
+class FakeLIMS(object):
+    '''
+    A fake registered connection to LIMS.
+    '''
+    def __init__(self, **kwds):
+        self.jobid = kwds.get('job_id',"-1")
+        return
+
+    def notify_failure(self, msg):
+        '''
+        Call to notify LIMS of a failure.  Message is error string.
+        '''
+        print 'Fake LIMS: failure with job %s: "%s"' % (self.jobid, msg)
+        return
+
+    def notify_status(self, msg):
+        '''
+        Call to notify LIMS of a status update.  Message is status string.
+        '''
+        print 'Fake LIMS: status with job %s: "%s"' % (self.jobid, msg)
+        return
+
+    def dependencies(self):
+        '''
+        Return list of dictionaries of registration information for
+        any dependencies this registered job has.
+        '''
+        return []
+
+def register(**kwds):
+    '''
+    Return a connection to LIMS
+    '''
+    return FakeLIMS(**kwds)
