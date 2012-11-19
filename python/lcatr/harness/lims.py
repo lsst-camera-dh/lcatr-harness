@@ -6,7 +6,7 @@ Interface with LIMS
 import os
 import json
 import urllib2
-
+import collections, pickle
 import logging
 log = logging.getLogger(__name__)
 
@@ -39,6 +39,95 @@ class RPC(object):
     pass
 
         
+
+class FakeTraveler(object):
+
+    default_traveler = {
+        ('stage1','v0'): (('stage2','v0'),('ana1','v0')),
+        ('stage2','v0'): (('ana2','v0'),),
+        }
+
+    def __init__(self, traveler_data = None):
+        if not traveler_data: 
+            traveler_data = FakeTraveler.default_traveler
+        self.traveler = traveler_data
+        deps = collections.defaultdict(list)
+        for parent, daughters in traveler_data.iteritems():
+            print 'parent:"%s", daughters="%s"' % (parent, daughters)
+            for d in daughters:
+                deps[d].append(parent)
+        self.dependencies = deps
+    
+
+class FakeLimsDB(object):
+    '''
+    A fake LIMS database.  
+    '''
+    
+    matched_keys = ['job','version','unit_type','unit_id']
+
+    def __init__(self):
+        self.jobs = []          # job registrations
+        self.traveler = FakeTraveler()
+        return
+
+    def does_match(self, a, b):
+        """Return True if a != B but a and b have same values for the matched_keys"""
+        if a == b: return False
+        n = len(self.jobs)
+        if a < 0 or b < 0 or a >= n or b >= n: return false # bad ID
+
+        for m in self.matched_keys:
+            try:
+                match = a[m] == b[m]
+            except KeyError:
+                return False
+            if not match:
+                return False
+        return True
+
+    def match_job(self, regid):
+        """Return list of regids that match the given one"""
+        ret = []
+        for ind,job in enumerate(self.jobs):
+            if self.does_match(regid, ind):
+                ret.append(ind)
+        return ret
+
+    def load(self, filename):
+        if not os.path.exists(filename):
+            self.jobs = []
+            return
+        fp = open(filename)
+        self.jobs = pickle.loads(fp.read())
+        fp.close()
+
+    def dump(self, filename):
+        fp = open(filename,'w')
+        fp.write(pickle.dumps(self.jobs))
+        fp.close()
+
+    def register(self, **kwds):
+        '''
+        Register job information, return tuple of (id, dependencies)
+        where ID is the registered identifier and dependencies is a
+        list of dictionaries holding the previously registered info
+        for all dependent jobs.
+        '''
+        regid = len(self.jobs)
+        self.jobs.append(kwds)
+
+        nv = (kwds['job'],kwds['version'])
+
+        deps = self.traveler[nv]
+        depregs = []
+        for dep_nv in deps:
+            depregs = self.match_job(regid)
+
+        return (regid, depregs)
+
+    pass
+
 class FakeLIMS(object):
     '''
     A fake registered connection to LIMS.

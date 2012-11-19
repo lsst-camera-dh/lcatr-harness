@@ -205,7 +205,9 @@ class Modules(object):
         else:
             args = list(args)
         cmd = [self.cmdstr, flavor] + args
-        print 'Running command: (%s) "%s"' % (type(cmd),cmd)
+        # FIXME: this should be properly logged, not printed.
+        print 'Running command: "%s", MODULEPATH="%s"' % (' '.join(cmd), self.env['MODULEPATH'])
+        
         #print '\n'.join(['(%s)%s=(%s)%s'%(type(k),k,type(v),v) for k,v in self.env.iteritems()])
         for k,v in self.env.iteritems():
             assert type(k) == str and type(v) == str, 'bad: %s:%s'%(k,v)
