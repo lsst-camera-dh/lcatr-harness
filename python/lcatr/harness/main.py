@@ -15,7 +15,7 @@ def cmdline(args):
     parser.add_argument('-c','--config', action='append',
                         help="Add a config file")
 
-    for par in config.Config.required_parameters:
+    for par in config.Config.required_parameters + config.Config.auxiliary_parameters:
         flag = '--' + par.replace('_','-')
         parser.add_argument(flag, default = "")
 

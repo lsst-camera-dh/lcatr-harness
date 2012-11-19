@@ -3,7 +3,7 @@
 Test the lcatr.harness.config module
 '''
 
-import os
+import os, socket
 from lcatr.harness import config
 import tempfile
 
@@ -27,10 +27,12 @@ site = TESTSITE
 archive_root = /tmp
 archive_user = testuser
 archive_host = testhost
+host = %(host)s
+lims_url = http://localhost/
 
 [job fake]
 version = v0
-''')
+''' % { 'host': socket.gethostname()} )
     fd.flush()
     #fd.close() # <-- don't do it
     return fd, fn
@@ -73,11 +75,11 @@ def test_incomplete():
 def test_missing():
     c = config.Config(filename=cfgfile)
     missing = set(c.missing())
-    missed = set(['context', 'version', 'job_id', 'localjob', 'unit_id'])
-    assert missing == missed, "Unexpected missing: %s != %s" % (missing,missed)
+    missed = set(['version', 'job_id', 'local', 'job', 'unit_id'])
+    assert missing == missed, "Unexpected missing: %s != %s" % (sorted(missing),sorted(missed))
 
     e1 = set(c.extra())
-    e2 = set(['unknown_parameter'])
+    e2 = set(['unknown_parameter','site'])
     assert e1 == e2, "Unexpected extra: %s != %s" %(e1,e2)
     return
 

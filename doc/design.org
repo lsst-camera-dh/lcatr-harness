@@ -59,7 +59,9 @@ LIMS among other systems.  Things with canonical identifiers include:
                   an associated Git commit tag of the software that
                   the job runs.
 
- - site name :: the location running the tests (including those hosting development testing)
+ - site name :: the location running the tests (including those
+                hosting development testing) and maps to a unique
+                database and file archive.
 
  - output directory :: a canonical pattern made up of other
       identifiers what describe the run of a job.
@@ -229,7 +231,7 @@ The configuration parameters understood by the harness are:
                 =site=, =local= and =job=.  It may be used to organize
                 default parameters.
 
- - =site= :: a (canonical) identifier for a site.
+ - =site= :: a identifier for a site.  It may be used to organize default parameters.
 
  - =local= :: a convenience identifier for the local computing
               environment (machine) running the harness.  It may be
@@ -408,8 +410,6 @@ LIMS.
 Every production run of a job is given a site-unique identifier (job
 ID).  This job ID is allocated through LIMS via an HTTP query which
 registers the following information:
-
- - site name :: canonical name of the testing site
 
  - unit type :: the type of unit being tested (CCD/RTM)
 

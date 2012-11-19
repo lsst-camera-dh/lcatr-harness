@@ -36,8 +36,7 @@ class Config(object):
     # To be fully configured these parameters must be provided.
     required_parameters = [
         
-        'context',    # A context, meta parameter used to define others
-        'site',       # The (canonical or a test) name for a site
+        'host',  # the name of the host machine running the job
         'local',      # Name for a local environment, used to define others
         'job',        # Canonical name of the job
         'version',    # Test software version string (git tag) 
@@ -49,12 +48,20 @@ class Config(object):
         'archive_user', # Login name of user that can write to archive
         'unit_type',    # type of unit (eg, CCD/RTM)
         'unit_id',      # The unique unit identifier
-        'job-id',       # The unique job identifer
+        'job_id',       # The unique job identifer
+        'lims_url',     # The URL of the LIMS web service
 
         'modules_home',         # guessed 
         'modules_version',      # by the
         'modules_cmd',          # environment
         'modules_path',         # module
+        ]
+
+    # These are not interpreted directly but can be useful for
+    # organizing configuration files
+    auxiliary_parameters = [
+        'context',              # can be used to specify a site/local/job
+        'site',                 # can be used to specify a site
         ]
 
     # These are required but are allowed to be guessed in the code if
