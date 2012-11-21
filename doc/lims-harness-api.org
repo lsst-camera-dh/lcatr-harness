@@ -1,0 +1,127 @@
+#+TITLE: The LIMS and Job Harness API
+#+AUTHOR: Brett Viren
+#+EMAIL: bv@bnl.gov
+#+DATE: \today
+
+#+LATEX_HEADER: \usepackage{hyperref}
+#+LATEX_HEADER: \hypersetup{
+#+LATEX_HEADER:   hyperindex=true,
+#+LATEX_HEADER:   plainpages=false,
+#+LATEX_HEADER:   colorlinks=true,
+#+LATEX_HEADER:   linkcolor=black
+#+LATEX_HEADER: }
+
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+#+LINK_UP:
+#+LINK_HOME:
+#+XSLT:
+
+
+The LCATR job harness communicates with LIMS in order to register job
+parameters, allocate job identifiers, provide status updates and
+upload result summaries.  This document describes their communication
+interface.
+
+* Communication
+
+All communication is initiated by the harness in the form of an HTTP
+POST.  The queried URL ends in =/Results/<command>=.  The the
+available commands and their expected POST data as described below.
+All responses from LIMS are of a MIME type =application/json=.
+
+* Commands
+
+The harness makes HTTP POST requests to the LIMS web application with
+URL path based at =/Results/<command>=.  For command the POST
+parameters and expected return data is described below.  The return
+data is of the form of a JSON string.
+
+** Registration
+
+The registration command is =requestID=.  This command posts the
+primary input parameters of a job in an attempt to register it.  If
+successful a unique identifier and the registration information for
+any prerequisite jobs is returned.
+
+POST parameters:
+
+ - =unit_type= :: the type of unit being tested (CCD/RTM)
+
+ - =unit_id= :: the identifier of the unit
+
+ - =job= :: canonical name of the job
+
+ - =version= :: the version of the software to be run
+
+ - =operator= :: user name of the account running the harness
+
+Nominal return is a dictionary with two top-level keys:
+
+ - =jobid= :: the identifier to use for this job
+ 
+ - =prereq= :: a list of dictionaries, each with keys named as the
+               post parameters as above plus an additional =jobid=
+               giving the registered job identifier for each.
+
+If the job should not be run then a dictionary is returned with:
+
+ - =jobid= :: null
+
+ - =error= :: a message describing why the job should not run
+
+** Status updates
+
+Status updates are given at various steps in the job and the command
+to update that status with LIMS is named after the step.
+
+ - =configured= :: the job environment has been configured
+
+ - =staged= :: files from any prior dependencies have been copied to the
+             local stage and the job's output directory is created.
+
+ - =produced= :: the primary program of the job (see below) has run successfully
+
+ - =validated= :: the secondary program validated the output and
+                produced required result summary and meta data files
+                (see below)
+
+ - =archived= :: files are successfully copied to the archive
+
+ - =purged= :: local stage area has been cleared (optional)
+
+Each command takes the following POST parameters:
+
+ - =jobid= :: the job identifier returned from registering
+
+ - =status= :: =null= if successful, an error message if a failure was detected
+
+Response from LIMS is a dictionary with a single element:
+
+ - =acknowledge= :: that holds either =null= if the status is
+                    accepted.  If the job should abort the value is
+                    not =null= and instead holds an explanation
+                    message.
+
+** Summary Result Upload
+
+When the job successfully produces a result it will upload a summary
+to the =ingenst= command.  
+
+The POST parameters:
+
+ - =jobid= :: the job identifier returned from registering
+
+ - =summary= :: a JSON string in compliance with result summary schema
+                holding the summary of the result.
+
+ 
+ 
+
+
