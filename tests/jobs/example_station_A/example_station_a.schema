@@ -1,0 +1,8 @@
+# -*- python -*-
+{
+    'schema_name': 'example_station_a',
+    'schema_version': 0,
+    'nsamples': int,
+    'namps': int,
+}
+
