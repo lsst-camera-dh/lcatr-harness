@@ -45,7 +45,7 @@ data is of the form of a JSON string.
 
 ** Registration
 
-The registration command is =requestID=.  This command posts the
+The registration command is =register=.  This command posts the
 primary input parameters of a job in an attempt to register it.  If
 successful a unique identifier and the registration information for
 any prerequisite jobs is returned.
