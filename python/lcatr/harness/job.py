@@ -93,6 +93,8 @@ class Job(object):
         - configuration parameter
         - modulefile
 
+        All parameters are applied by going calling the .em.execute()
+        method to execute external programs.
         '''
         
         env = dict(os.environ)  # calling environment

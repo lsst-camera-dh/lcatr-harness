@@ -1,0 +1,95 @@
+#+TITLE: LCATR Job Installation
+#+AUTHOR: Brett Viren
+#+EMAIL: bv@bnl.gov
+#+DATE: \today
+
+#+LATEX_HEADER: \usepackage{hyperref}
+#+LATEX_HEADER: \hypersetup{
+#+LATEX_HEADER:   hyperindex=true,
+#+LATEX_HEADER:   plainpages=false,
+#+LATEX_HEADER:   colorlinks=true,
+#+LATEX_HEADER:   linkcolor=black
+#+LATEX_HEADER: }
+
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+#+LINK_UP:
+#+LINK_HOME:
+#+XSLT:
+
+To facilitate organizing test software installation and environment
+configuration a few conventions are to be followed when installing
+LSST CCD acceptance testing or analysis software.
+
+* Minimum Requirements
+
+LSST CCD test or analysis software must provide two main programs: a
+/producer/ and a /validator/.  Their locations must be communicated to
+the job harness by defining =LCATR_PRODUCER= and =LCATR_VALIDATOR=
+environment variables.  
+
+
+* Installation Locations
+
+All software packages are to be installed to locations that follow the
+convention:
+
+#+BEGIN_EXAMPLE
+$LCATR_INSTALL_AREA/<jobname>/<jobversion>/
+#+END_EXAMPLE
+
+The =<jobname>= is the canonical name for the software and the
+=<jobversion>= string must match that of a GIT tag which marks the
+version of the software that is installed.  It is up to the software
+installation manager to assure this correspondence.
+
+The value of =LCATR_INSTALL_AREA= is specific to the hosting computer
+and may be specified through the usual job harness configuration
+mechanism or in the calling environment.
+
+* Environment Management
+
+The job harness enforces consistent environment management of the
+various software packages through the use of /modulefiles/.  They
+define the environment variables required by the harness and any
+additional environment needed by that particular package.  There is a
+/modulefile/ corresponding to the name and version of each installed
+instance of the software.  Some conventions are followed to make
+writing a /modulefile/ simple.
+
+
+** Conventions for writing a /modulefile/
+
+The environment requirements placed on the software by the job harness
+can be satisfied by properly calling the function =lcatr_package=
+which is defined in the =lcatr.tcl= library provided by the
+/modulefile/ package.  The minimum module file is thus:
+
+#+BEGIN_SRC Tcl
+source $env(LCATR_MODULES)/lcatr.tcl
+lcatr_package <producer> <validator>
+#+END_SRC
+
+The =<producer>= and =<validator>= arguments are taken to be paths
+relative to =$LCATR_INSTALL_AREA/<jobname>/<jobversion>/= and pointing
+to the /producer/ and /validator/ main programs, respectively.
+
+
+** Locating a /modulefile/
+
+A /modulefile/ may be located in a few places depending on
+convenience.  It may be added to a central =modulefiles= package or it
+may be placed in a file called =modulefile= at top level of the
+installation area for the instance of the software.  That is, it must
+be found at either one of these two locations:
+
+#+begin_example
+$LCATR_MODULES/<jobname>/<jobversion>
+$LCATR_INSTALL_AREA/<jobname>/<jobversion>/modulefile
+#+end_example

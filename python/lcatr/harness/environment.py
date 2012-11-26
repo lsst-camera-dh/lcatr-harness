@@ -227,12 +227,28 @@ class Modules(object):
             raise RuntimeError,msg
         return out
 
+    def resolve_mod_name(self, mod_name):
+        '''
+        A module name should be like <jobname>/<jobversion> but if the
+        modulefile is stored in the installation area then the name
+        has to be coerced to include "/modulefile".
+        '''
+        # we defer to installed modulefile files
+        maybe = mod_name + '/modulefile'
+
+        if os.path.exists(os.path.join([self.install_area,maybe])):
+            return maybe
+        return mod_name
+        
+
     def do_cmd(self, cmd, mod_name, *args):
         '''
         Run a modules command for a given module and version.
 
         Results are reflected in the .env dictionary of environment variables.
         '''
+
+        mod_name = self.resolve_mod_name(mod_name)
         
         # use flavor "sh" as it's easier to parse and we don't want to
         # operate directly on os.environ like modules tries to force
@@ -257,6 +273,12 @@ class Modules(object):
         return
     
     def __getattr__(self, cmd):
+        '''
+        If a environment modules command is requested, return a
+        callable to execute that command. Otherwise return the value
+        of an environment variable of the same name (or an upper cased
+        version).  No special name prefix is assumed.
+        '''
         if cmd in ['load','add','unload','rm']: 
             return lambda name, *args: self.do_cmd(cmd, name, *args)
         var = cmd

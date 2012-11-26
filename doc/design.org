@@ -271,7 +271,7 @@ The configuration parameters understood by the harness are:
  - =modules_path= :: a colon-separated path of in which to search for
                      /modulefiles/.
 
-
+ - =install_area= :: the root to where software packages are installed.
 
 
 * Job Environment 
