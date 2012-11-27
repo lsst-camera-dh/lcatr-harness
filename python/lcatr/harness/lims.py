@@ -3,162 +3,115 @@
 Interface with LIMS
 '''
 
-import os
+import time
 import json
-import urllib2
-import collections, pickle
+import urllib
+
 import logging
 log = logging.getLogger(__name__)
 
-def make_url(base_url, command, **kwds):
-    '''
-    Return a URL <base_url>/command/?k1=v1&k2=v2
-    '''
-    args = '&'.join(['%s=%s' % (k,v) for k,v in kwds.iteritems()])
-    if base_url[-1] != '/': 
-        base_url += '/'
-    return base_url + command + '?' + args
+API = {
+    'base_path': 'Results',
 
-class RPC(object):
+    # commands and their query parameters:
+    'requestID':['jobid','stamp','unit_type','unit_id', 'job', 'version', 'operator'],
+    'update'   :['jobid','stamp','step','status'],
+    'ingest'   :['jobid','stamp','result'],
 
-    def __init__(self, base_url, **reginfo):
-        self.base_url = base_url
-        self.reginfo = reginfo
-        ret = self('register',reginfo)
-        self.jobid = ret['jobid']
-        self.deps = ret['dependencies']
-        return
+    # details:
+    'known_status':[ 'configured','staged','produced','validated','archived','purged'],
     
-    def __call__(self, command, **kwds):
-        url = make_url(self.base_url, command, **kwds)
-        log.info('get: "%s"' % url)
-        res = urllib2.urlopen(url).read()
-        log.info('got: "%s"' % res)
-        return json.loads(res)
+    }
 
-    pass
+class Results(object):
+    '''
+    Register and communicate with the LIMS Results API.
 
+    This follows the LIMS/Harness API document.
+    '''
+
+
+    def __init__(self, url):
+        '''
+        Create a lims.Register object connected to the given LIMS URL.
+        '''
+        self.jobid = None
+        if url[-1] == '/': url = url[:-1]
+        if not url.endswith(API['base_path']):
+            url = '/' + API['base_path']
+        url += '/'
+        self.limsurl = url
+        return
+
+    def make_params(self, command, **kwds):
+        '''
+        Take keyword arguments and return dictionary suitable for use
+        with command or raise ValueError.
+        '''
+        cfg = dict(kwds, stamp=time.time(), jobid=self.jobid)
+        want = set(API[command])
+        if not want.issubset(cfg):
+            raise ValueError, 'Not given enough info needed to register with LIMS'
+        query = {k:cfg[k] for k in want}
+        return query
+
+    def make_query(self, command, **kwds):
+        '''
+        Make a query string for the given command and with the given
+        keywords or raise ValueError.
+        '''
+        query = self.make_params(command,**kwds)
+        qdata = urllib.urlencode({'jsonObject':json.dumps(query)})
+        url = self.limsurl + command
+        page = urllib.urlopen(url, qdata).read()
+        return json.loads(page)
         
 
-class FakeTraveler(object):
-
-    default_traveler = {
-        ('stage1','v0'): (('stage2','v0'),('ana1','v0')),
-        ('stage2','v0'): (('ana2','v0'),),
-        }
-
-    def __init__(self, traveler_data = None):
-        if not traveler_data: 
-            traveler_data = FakeTraveler.default_traveler
-        self.traveler = traveler_data
-        deps = collections.defaultdict(list)
-        for parent, daughters in traveler_data.iteritems():
-            print 'parent:"%s", daughters="%s"' % (parent, daughters)
-            for d in daughters:
-                deps[d].append(parent)
-        self.dependencies = deps
-    
-
-class FakeLimsDB(object):
-    '''
-    A fake LIMS database.  
-    '''
-    
-    matched_keys = ['job','version','unit_type','unit_id']
-
-    def __init__(self):
-        self.jobs = []          # job registrations
-        self.traveler = FakeTraveler()
-        return
-
-    def does_match(self, a, b):
-        """Return True if a != B but a and b have same values for the matched_keys"""
-        if a == b: return False
-        n = len(self.jobs)
-        if a < 0 or b < 0 or a >= n or b >= n: return false # bad ID
-
-        for m in self.matched_keys:
-            try:
-                match = a[m] == b[m]
-            except KeyError:
-                return False
-            if not match:
-                return False
-        return True
-
-    def match_job(self, regid):
-        """Return list of regids that match the given one"""
-        ret = []
-        for ind,job in enumerate(self.jobs):
-            if self.does_match(regid, ind):
-                ret.append(ind)
-        return ret
-
-    def load(self, filename):
-        if not os.path.exists(filename):
-            self.jobs = []
-            return
-        fp = open(filename)
-        self.jobs = pickle.loads(fp.read())
-        fp.close()
-
-    def dump(self, filename):
-        fp = open(filename,'w')
-        fp.write(pickle.dumps(self.jobs))
-        fp.close()
-
     def register(self, **kwds):
-        '''
-        Register job information, return tuple of (id, dependencies)
-        where ID is the registered identifier and dependencies is a
-        list of dictionaries holding the previously registered info
-        for all dependent jobs.
-        '''
-        regid = len(self.jobs)
-        self.jobs.append(kwds)
+        """
+        Register with LIMS.  Call with (at least) the keywords defined
+        in API.requestID.  Return LIMS job identifier (or raise
+        ValueError) also stored as .jobid.  The list of any
+        prerequisites are stored in the .prereq data member.
+        """
+        res = self.make_query('requestID', **kwds)
+        jobid = res['jobid']
+        if jobid is None:
+            msg = 'Failed to register with LIMS: "%s"' % res['error']
+            raise ValueError, msg
+        self.jobid = jobid
+        self.prereq = res['prereq']
+        return jobid
 
-        nv = (kwds['job'],kwds['version'])
-
-        deps = self.traveler[nv]
-        depregs = []
-        for dep_nv in deps:
-            depregs = self.match_job(regid)
-
-        return (regid, depregs)
-
-    pass
-
-class FakeLIMS(object):
-    '''
-    A fake registered connection to LIMS.
-    '''
-    def __init__(self, **kwds):
-        self.jobid = kwds.get('job_id',"-1")
-        return
-
-    def notify_failure(self, msg):
+    def update(self, **kwds):
         '''
-        Call to notify LIMS of a failure.  Message is error string.
+        Update LIMS that the given <step> has finished.  The <status>
+        should be None if the step was successfull, o.w. it should
+        explain the error that occured.  Return None if accepted or an
+        explanation string if LIMS thinks the caller should terminate.
         '''
-        print 'Fake LIMS: failure with job %s: "%s"' % (self.jobid, msg)
-        return
+        query = self.make_params('update',**kwds)
+        if not query['status'] in API['known_status']:
+            raise ValueError,'Unknown status update state: "%s"' % query['status']
+        res = self.make_query('update', **kwds)
+        return res['acknowledge']
 
-    def notify_status(self, msg):
-        '''
-        Call to notify LIMS of a status update.  Message is status string.
-        '''
-        print 'Fake LIMS: status with job %s: "%s"' % (self.jobid, msg)
-        return
 
-    def dependencies(self):
+    def ingest(self, **kwds):
         '''
-        Return list of dictionaries of registration information for
-        any dependencies this registered job has.
+        Send a summary <result> list to LIMS.  Return None if accepted
+        or an explanation string if LIMS thinks the caller should
+        terminate.
         '''
-        return []
+        res = self.make_query('result',**kwds)
+        return res['acknowledge']
+
 
 def register(**kwds):
     '''
-    Return a connection to LIMS
+    Return a registered Results connection to LIMS
     '''
-    return FakeLIMS(**kwds)
+    res = Results(kwds['limsurl'])
+    res.register(**kwds)
+    return res
+

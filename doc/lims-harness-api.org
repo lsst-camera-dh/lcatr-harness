@@ -32,25 +32,42 @@ interface.
 * Communication
 
 All communication is initiated by the harness in the form of an HTTP
-POST.  The queried URL ends in =/Results/<command>=.  The the
-available commands and their expected POST data as described below.
-All responses from LIMS are of a MIME type =application/json=.
+POST.  The queried URL ends in =/Results/<command>=.  All POST data
+uses a single keyword =jsonObject= and a value which is a JSON-encoded
+string.  All responses from LIMS are of a MIME type =application/json=
+and contain a JSON-encoded string.  The form of the POSTed and
+returned JSON strings are described for each command below.
 
 * Commands
 
-The harness makes HTTP POST requests to the LIMS web application with
-URL path based at =/Results/<command>=.  For command the POST
-parameters and expected return data is described below.  The return
-data is of the form of a JSON string.
+There are three LIMS commands that the job harness calls.  One for
+registering a new job, one for updating its status and one for
+uploading a summary of its results.  For each command there is
+specified a query data structure and either nominal return and
+exceptional data structures.  These data structures are, at top level,
+in the form of a dictionary.
+
+** Common
+
+Beyond the command-specific entries, every query data structure has
+the following:
+
+ - =jobid= :: the LIMS ID string returned as part of registrations
+              (note: for registration, this entry is ignored and may
+              be =null=)
+
+ - =stamp= :: a time stamp that the client associates with the query.
+              It is of the form of seconds since the Unix epoch.
+
 
 ** Registration
 
-The registration command is =register=.  This command posts the
-primary input parameters of a job in an attempt to register it.  If
-successful a unique identifier and the registration information for
-any prerequisite jobs is returned.
+The registration command is =requestID=.  It is used to attempt to
+register a new job with LIMS and to deliver to the harness a list of
+any prerequisite jobs that must have completed before the registering
+one may begin.
 
-POST parameters:
+The query contains a specific subset of the job's input parameters.
 
  - =unit_type= :: the type of unit being tested (CCD/RTM)
 
@@ -62,7 +79,9 @@ POST parameters:
 
  - =operator= :: user name of the account running the harness
 
-Nominal return is a dictionary with two top-level keys:
+The nominal return gives a LIMS job identifier string and a list of
+the registered information of any jobs on which the requesting one
+depends.
 
  - =jobid= :: the identifier to use for this job
  
@@ -70,16 +89,31 @@ Nominal return is a dictionary with two top-level keys:
                post parameters as above plus an additional =jobid=
                giving the registered job identifier for each.
 
-If the job should not be run then a dictionary is returned with:
+If an exception occurs no job identifier is allocated and an error
+message is returned:
 
  - =jobid= :: null
 
  - =error= :: a message describing why the job should not run
 
+
 ** Status updates
 
-Status updates are given at various steps in the job and the command
-to update that status with LIMS is named after the step.
+Status updates are sent to LIMS through the course of the job.  The
+command is =update=.
+
+The query includes these entries:
+
+ - =step= :: the canonical name of the step just completed.
+
+ - =status= :: =null= if the step completed successfully, otherwise it
+               contains a human readable string that indicates the
+               nature of the failure.  
+
+Note, reported failures are fatal and no follow-up status updates
+should be expected from the job.  
+
+The current list of =step= values is:
 
  - =configured= :: the job environment has been configured
 
@@ -96,30 +130,40 @@ to update that status with LIMS is named after the step.
 
  - =purged= :: local stage area has been cleared (optional)
 
-Each command takes the following POST parameters:
+Both the nominal and the exceptional response has a single key:
 
- - =jobid= :: the job identifier returned from registering
-
- - =status= :: =null= if successful, an error message if a failure was detected
-
-Response from LIMS is a dictionary with a single element:
-
- - =acknowledge= :: that holds either =null= if the status is
-                    accepted.  If the job should abort the value is
-                    not =null= and instead holds an explanation
-                    message.
+ - =acknowledge= :: =null= if the status is accepted.  If the job
+                    should abort this will contain a human readable
+                    message explaining why.
 
 ** Summary Result Upload
 
 When the job successfully produces a result it will upload a summary
-to the =ingenst= command.  
+via the =ingest= command.  In addition to the common entries this
+command expects a single additional one:
 
-The POST parameters:
+ - =result= :: a list of schema-compliant result summary data
+               structures.
 
- - =jobid= :: the job identifier returned from registering
+Each schema-compliant result summary data structure is a dictionary
+that contains at least these entries:
 
- - =summary= :: a JSON string in compliance with result summary schema
-                holding the summary of the result.
+ - =schema_name= :: canonical name for the part of the result that the
+                    data pertains to and the schema it follows.
+
+ - =schema_version= :: the exact version of the schema that the data
+                       follows.
+
+The payload of the actual result summary is sent as additional
+entries.  More information about schemas is in the "LCATR Schema"
+document.
+
+Both the nominal and the exceptional response has a single key:
+
+ - =acknowledge= :: =null= if the status is accepted.  If the job
+                    should abort this will contain a human readable
+                    message explaining why.
+
 
  
  

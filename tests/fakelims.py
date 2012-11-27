@@ -100,10 +100,10 @@ class FakeLimsDB(object):
 class FakeLimsCommands(object):
     
     API = {
-        'register': ['unit_type','unit_id', 'job', 'version', 'operator'],
-        'update': ['jobid','step','status'],
+        'requestID':      ['stamp','unit_type','unit_id', 'job', 'version', 'operator'],
+        'update': ['jobid','stamp','step','status'],
+        'ingest': ['jobid','stamp','result']
         }
-
 
     def __init__(self):
         dbfile = os.path.splitext(__file__)[0] + '.db'
@@ -116,7 +116,7 @@ class FakeLimsCommands(object):
         meth = eval('self.cmd_%s'%cmd)
         return meth(**kwds)
 
-    def cmd_register(self,  unit_type, unit_id, job, version, operator):
+    def cmd_requestID(self, unit_type, unit_id, job, version, operator, stamp, jobid=None):
         "Register a job, get a job ID"
 
         ret = []
@@ -139,10 +139,14 @@ class FakeLimsCommands(object):
                                  job=job, version=version, operator=operator)
         return {'jobid':jobid, 'prereq':prereqs}
 
-    def cmd_update(self, jobid, step, status):
+    def cmd_update(self, step, status, stamp, jobid):
         "Update status for jobid step"
         self.db.update(jobid, step, status)
-        return {'acknowledge',None}
+        return {'acknowledge', None}
+
+    def cmd_ingest(self, result, stamp, jobid):
+        "Ingest the result summary data."
+        return {'acknowledge', None}
 
     pass
 
@@ -160,6 +164,9 @@ class FakeLimsHandler(BaseHTTPRequestHandler):
 
 
     def postvars(self):
+        """
+        Return a dictionary of query parameters
+        """
         ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
         logging.debug('ctype="%s" pdict="%s"' % (str(ctype), str(pdict)))
         if ctype == 'multipart/form-data':
@@ -169,8 +176,9 @@ class FakeLimsHandler(BaseHTTPRequestHandler):
             postvars = cgi.parse_qs(self.rfile.read(length), keep_blank_values=1)
         else:
             return {}
-        return {k:v[0] for k,v in postvars.iteritems()}
-
+        query = {k:v[0] for k,v in postvars.iteritems()}
+        js = query['jsonObject']
+        return json.loads(js)
 
     def do_POST(self):
 
