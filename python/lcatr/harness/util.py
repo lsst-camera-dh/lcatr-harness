@@ -28,7 +28,7 @@ log = _setlog(logging.DEBUG)
 
 
 
-def file_logger(name, filename = None, level = logging.INFO):
+def file_logger(name, filename = None, level = logging.DEBUG):
     '''
     Make a logger to file of the given name.  If filename is not given
     it is made by appending ".log" to the name.

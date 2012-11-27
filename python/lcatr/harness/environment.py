@@ -7,6 +7,7 @@ import os
 import re
 import subprocess
 from glob import glob
+from util import log
 
 guessed_bases = [
     '/opt/lsst/SL53/Modules/[0-9]*',
@@ -293,7 +294,7 @@ class Modules(object):
         raise KeyError,cmd
 
 
-    def execute(self, cmdstr, out = None):
+    def execute(self, cmdstr, out = log.debug):
         '''
         Execute the command string in the environment.
         '''

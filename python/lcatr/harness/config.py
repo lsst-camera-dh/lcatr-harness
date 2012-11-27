@@ -231,7 +231,7 @@ class Config(object):
         Construct and return the subdir relative to CCDTEST_ROOT.
         '''
         if prefix == 'archive': prefix = self.archive_root + '/'
-        if prefix == 'local':   prefix = self.local_root + '/'
+        if prefix == 'stage':   prefix = self.stage_root + '/'
         if not prefix:          prefix = ''
         s = Config.subdir_policy % self.__dict__
         return prefix + s

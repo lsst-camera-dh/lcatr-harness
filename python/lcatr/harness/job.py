@@ -123,6 +123,7 @@ class Job(object):
     def do_register(self):
         'Initial registering with lims.'
         self.lims = lims.register(**self.cfg.__dict__)
+        self.cfg.job_id = self.lims.jobid
         return
 
     def stage_in(**depinfo):
@@ -139,14 +140,27 @@ class Job(object):
             self.stage_in(**depinfo)
         return
 
+    def go_working_dir(self):
+        '''
+        Assure the working directory exists and change to it.
+        '''
+        wd = self.cfg.subdir('stage')
+        if not os.path.exists(wd):
+            os.makedirs(wd)
+        util.log.debug('Changing to directory: %s' % wd)
+        os.chdir(wd)
+        return
+
     def do_produce(self):
-        out = util.file_logger('producer')
-        self.em.execute(self.em.lcatr_producer, out=out.info)
+        self.go_working_dir()
+        #out = util.file_logger('producer')
+        self.em.execute(self.em.lcatr_producer, out=util.log.info)
         return
 
     def do_validate(self):
-        out = util.file_logger('validator')
-        self.em.execute(self.em.lcatr_validator, out=out.info)
+        self.go_working_dir()
+        #out = util.file_logger('validator')
+        self.em.execute(self.em.lcatr_validator, out=util.log.info)
         self.followup_validation()
         return
 
