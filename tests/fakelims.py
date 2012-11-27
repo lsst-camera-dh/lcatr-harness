@@ -142,11 +142,11 @@ class FakeLimsCommands(object):
     def cmd_update(self, step, status, stamp, jobid):
         "Update status for jobid step"
         self.db.update(jobid, step, status)
-        return {'acknowledge', None}
+        return {'acknowledge': None}
 
     def cmd_ingest(self, result, stamp, jobid):
         "Ingest the result summary data."
-        return {'acknowledge', None}
+        return {'acknowledge': None}
 
     pass
 
@@ -207,7 +207,12 @@ class FakeLimsHandler(BaseHTTPRequestHandler):
 
         ret = lims_commands(cmd, **pvars)
         logging.info(ret)
-        self.wfile.write(json.dumps(ret) + '\n')
+        try:
+            jstr = json.dumps(ret)
+        except TypeError,msg:
+            print 'Failed to dump to json for return from %s(%s)' % (cmd,str(pvars))
+            raise
+        self.wfile.write(jstr + '\n')
         return
         
     def set_error(self, msg):

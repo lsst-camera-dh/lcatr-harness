@@ -236,8 +236,13 @@ class Modules(object):
         # we defer to installed modulefile files
         maybe = mod_name + '/modulefile'
 
-        if os.path.exists(os.path.join([self.install_area,maybe])):
-            return maybe
+        modfilepath = os.path.join(self.install_area, maybe)
+        try:
+            if os.path.exists(modfilepath):
+                return maybe
+        except TypeError,msg:
+            print 'Error checking for: "%s"' % modfilepath
+            raise
         return mod_name
         
 
@@ -282,11 +287,9 @@ class Modules(object):
         if cmd in ['load','add','unload','rm']: 
             return lambda name, *args: self.do_cmd(cmd, name, *args)
         var = cmd
-        if self.env.has_key(var):
-            return self.env[var]
-        var = cmd.upper()
-        if self.env.has_key(var):
-            return self.env[var]
+        for maybe in [var, var.upper(), 'lcatr_'+var, 'LCATR_'+var.upper()]:
+            if self.env.has_key(maybe):
+                return self.env[maybe]
         raise KeyError,cmd
 
 

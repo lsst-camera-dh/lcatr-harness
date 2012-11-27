@@ -32,7 +32,6 @@ class Job(object):
         'job',        # Canonical name of the job
         'version',    # Test software version string (git tag) 
         'operator',   # User name of person operating/running the test
-        'site',       # Canonical site location where we are running 
         'host',       # Name of host running this job
         'stamp',      # A time_t seconds stamping when job ran
         'stage_root', # The CCDTEST_ROOT on local machine
@@ -41,11 +40,13 @@ class Job(object):
         'archive_user', # Login name of user that can write to archive
         'unit_type',    # type of unit (eg, CCD/RTM)
         'unit_id',      # The unique unit identifier
+        'install_area', # base to where software is installed
         ]
 
 
-    all_steps = ['configure','register','stage','produce','validate', 'archive','purge']
-
+    # The list of steps and how/whether to report to LIMS
+    all_steps = ['configure','register','stage','produce','validate','archive','purge']
+    report_as = [None,'configured','staged','produced','validated','archived','purged']
 
     def __init__(self, cfg):
         '''
@@ -73,13 +74,21 @@ class Job(object):
         for step in steps:
             #print 'Step: "%s"' % step
             meth = eval("self.do_%s" % step)
+
+            stepped = self.report_as[self.all_steps.index(step)]
+
+            util.log.debug('Running step "%s"' % step)
             try:
                 meth()
             except Exception,err:
-                if self.lims: self.lims.notify_failure(err)
+                util.log.error('Error with step %s: %s' % (step,str(err)))
+                if self.lims and stepped:
+                    self.lims.update(step=stepped,status=err)
                 raise
             else:
-                if self.lims: self.lims.notify_status(step)
+                util.log.info('Step %s completed' % step)
+                if self.lims and stepped: 
+                    self.lims.update(step=stepped)
             continue
         return
             
@@ -126,7 +135,7 @@ class Job(object):
 
     def do_stage(self):
         'Ready the stage.'
-        for depinfo in self.lims.dependencies(): 
+        for depinfo in self.lims.prereq: 
             self.stage_in(**depinfo)
         return
 

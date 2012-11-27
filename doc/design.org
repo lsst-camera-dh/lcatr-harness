@@ -256,6 +256,8 @@ The configuration parameters understood by the harness are:
  - =stage_root= :: the absolute path to the root of the stage file
                    system local to the computer running the job.
 
+ - =lims_url= :: the URL for the LIMS instance of the form =http://host:port/=
+
  - =dependencies= :: a colon-separated list of job name/version pairs
                      on which the current job depends.  Note, this is
                      for testing the harness independently from LIMS.

@@ -50,6 +50,7 @@ class Config(object):
         'unit_id',      # The unique unit identifier
         'job_id',       # The unique job identifer
         'lims_url',     # The URL of the LIMS web service
+        'install_area', # base to where software is installed
 
         'modules_home',         # guessed 
         'modules_version',      # by the
@@ -67,7 +68,7 @@ class Config(object):
     # These are required but are allowed to be guessed in the code if
     # not specified otherwise.
     allow_implicit = [
-        'site',       # guessed based on hostname
+        'host',       # guessed based on hostname
         'operator',   # guessed based on USER env var
         'stamp',      # taken as current time
         'stage_root', # taken as current working directory
@@ -152,11 +153,11 @@ class Config(object):
         '''
         return string % self.__dict__
 
-    def guess_site(self):
-        if hasattr(self,'site'): return self.site
+    def guess_host(self):
+        if hasattr(self,'host'): return self.host
         fqdn = socket.gethostbyaddr(socket.gethostname())[0]
-        self.site = '.'.join(fqdn.split('.')[-2:])
-        return self.site
+        self.host = '.'.join(fqdn.split('.')[-2:])
+        return self.host
 
     def guess_operator(self):
         if hasattr(self,'operator'): return self.operator

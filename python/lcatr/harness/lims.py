@@ -7,8 +7,7 @@ import time
 import json
 import urllib
 
-import logging
-log = logging.getLogger(__name__)
+from util import log
 
 API = {
     'base_path': 'Results',
@@ -19,7 +18,7 @@ API = {
     'ingest'   :['jobid','stamp','result'],
 
     # details:
-    'known_status':[ 'configured','staged','produced','validated','archived','purged'],
+    'known_steps':[ 'configured','staged','produced','validated','archived','purged'],
     
     }
 
@@ -38,9 +37,10 @@ class Results(object):
         self.jobid = None
         if url[-1] == '/': url = url[:-1]
         if not url.endswith(API['base_path']):
-            url = '/' + API['base_path']
+            url += '/' + API['base_path']
         url += '/'
-        self.limsurl = url
+        self.lims_url = url
+        log.info('Using LIMS URL: "%s"' % url)
         return
 
     def make_params(self, command, **kwds):
@@ -48,10 +48,13 @@ class Results(object):
         Take keyword arguments and return dictionary suitable for use
         with command or raise ValueError.
         '''
-        cfg = dict(kwds, stamp=time.time(), jobid=self.jobid)
+        cfg = dict(kwds, stamp=int(time.time()), jobid=self.jobid)
         want = set(API[command])
-        if not want.issubset(cfg):
-            raise ValueError, 'Not given enough info needed to register with LIMS'
+        missing = want.difference(cfg)
+        if missing:
+            msg = 'Not given enough info to statisfy LIMS API for %s: missing: %s' % (command, str(sorted(missing)))
+            log.error(msg)
+            raise ValueError, msg
         query = {k:cfg[k] for k in want}
         return query
 
@@ -61,10 +64,20 @@ class Results(object):
         keywords or raise ValueError.
         '''
         query = self.make_params(command,**kwds)
-        qdata = urllib.urlencode({'jsonObject':json.dumps(query)})
-        url = self.limsurl + command
-        page = urllib.urlopen(url, qdata).read()
-        return json.loads(page)
+
+        jdata = json.dumps(query)
+        log.debug('Query LIMS "%s" with "%s"' % (command, jdata))
+        qdata = urllib.urlencode({'jsonObject':jdata})
+
+        url = self.lims_url + command
+        fp = urllib.urlopen(url, qdata)
+        page = fp.read()
+        try:
+            jres = json.loads(page)
+        except ValueError, msg:
+            print 'Failed to load return page with %s %s got:\n%s' % (qdata, url, page)
+            raise
+        return jres
         
 
     def register(self, **kwds):
@@ -78,9 +91,10 @@ class Results(object):
         jobid = res['jobid']
         if jobid is None:
             msg = 'Failed to register with LIMS: "%s"' % res['error']
+            log.error(msg)
             raise ValueError, msg
         self.jobid = jobid
-        self.prereq = res['prereq']
+        self.prereq = res['prereq'] or list()
         return jobid
 
     def update(self, **kwds):
@@ -90,9 +104,13 @@ class Results(object):
         explain the error that occured.  Return None if accepted or an
         explanation string if LIMS thinks the caller should terminate.
         '''
+        kwds = dict(kwds, status = None)
         query = self.make_params('update',**kwds)
-        if not query['status'] in API['known_status']:
-            raise ValueError,'Unknown status update state: "%s"' % query['status']
+        step = query['step']
+        if not step in API['known_steps']:
+            msg = 'Unknown status update step: "%s"' % step
+            log.error(msg)
+            raise ValueError, msg
         res = self.make_query('update', **kwds)
         return res['acknowledge']
 
@@ -111,7 +129,7 @@ def register(**kwds):
     '''
     Return a registered Results connection to LIMS
     '''
-    res = Results(kwds['limsurl'])
+    res = Results(kwds['lims_url'])
     res.register(**kwds)
     return res
 

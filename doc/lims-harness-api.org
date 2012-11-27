@@ -31,12 +31,16 @@ interface.
 
 * Communication
 
-All communication is initiated by the harness in the form of an HTTP
-POST.  The queried URL ends in =/Results/<command>=.  All POST data
-uses a single keyword =jsonObject= and a value which is a JSON-encoded
-string.  All responses from LIMS are of a MIME type =application/json=
-and contain a JSON-encoded string.  The form of the POSTed and
-returned JSON strings are described for each command below.
+All communication is initiated by a query from the harness in the form
+of an HTTP POST.  Any GET method is not specified here.  The queried
+URL ends in =/Results/<command>=.  All POST data uses a single keyword
+=jsonObject= and a value which is a JSON-encoded string.  All
+responses, including errors, from LIMS are of a MIME type
+=application/json= and contain a JSON-encoded string.  The form of the
+JSON strings in a POST query and their return are described for each
+command below.  A successful HTTP query will be indicated with the
+usual code 200 and this is independent of any potential
+application-level logic errors.
 
 * Commands
 
