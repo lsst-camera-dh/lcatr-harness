@@ -56,13 +56,15 @@ mechanism or in the calling environment.
 * Environment Management
 
 The job harness enforces consistent environment management of the
-various software packages through the use of /modulefiles/.  They
-define the environment variables required by the harness and any
-additional environment needed by that particular package.  There is a
+various software packages through the use of the Environment Modules
+Project[fn:web] and its /modulefiles/.  These files define the
+environment variables required by the harness as well as any
+additional environment needed by a particular package.  There is a
 /modulefile/ corresponding to the name and version of each installed
 instance of the software.  Some conventions are followed to make
 writing a /modulefile/ simple.
 
+[fn:web] http://modules.sf.net/
 
 ** Conventions for writing a /modulefile/
 
@@ -72,7 +74,7 @@ which is defined in the =lcatr.tcl= library provided by the
 /modulefile/ package.  The minimum module file is thus:
 
 #+BEGIN_SRC Tcl
-source $env(LCATR_MODULES)/lcatr.tcl
+source $::env(LCATR_MODULES)/lcatr.tcl
 lcatr_package <producer> <validator>
 #+END_SRC
 
@@ -83,13 +85,37 @@ to the /producer/ and /validator/ main programs, respectively.
 
 ** Locating a /modulefile/
 
-A /modulefile/ may be located in a few places depending on
-convenience.  It may be added to a central =modulefiles= package or it
-may be placed in a file called =modulefile= at top level of the
-installation area for the instance of the software.  That is, it must
-be found at either one of these two locations:
+The /modulefile/ for an installed instance of a package may be located
+as supported by the Environment Module Project system.  Ultimately the
+locations checked are governed by the value of the =MODULEPATH=
+environment variable.  Two locations in particular are suggested for
+LCATR packages.
+
+A central git repository[fn:mfgit] of /modulefiles/ is maintained.  This
+repository is populated with directories and files named like
+=<jobname>/<jobversion>=.  For packages that have their /modulefiles/
+kept in this repository a new /modulefile/ must be added for each
+release of the software.  It is this repository area that is pointed
+to by the =LCATR_MODULES= environment variable used above.
+
+It is common for /modulefiles/ to be unchanged between different
+releases of the software and so it can become burdensome to make new
+ones for each release.  To rectify this a /modulefile/ can be
+maintained directly in the software source repository and be installed
+along with the package to the installation area.  In this case the
+/modulefile/ must exist at top-level in the package directory and be
+called -.modulerc=
+ 
+
+In summary, every installed instance of the software must have a
+/modulefile/ in at least one of two places:
 
 #+begin_example
+$LCATR_INSTALL_AREA/<jobname>/<jobversion>/.modulerc
 $LCATR_MODULES/<jobname>/<jobversion>
-$LCATR_INSTALL_AREA/<jobname>/<jobversion>/modulefile
 #+end_example
+
+By default the =MODULEPATH= variable is set to first check the install
+area before the central /modulefiles/ repository.
+
+[fn:mfgit] https://git.racf.bnl.gov/astro/cgit/lcatr/modulefiles.git/

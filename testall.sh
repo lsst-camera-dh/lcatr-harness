@@ -1,7 +1,12 @@
 #!/bin/bash
 
-pkgdir=$(dirname $0)
+pkgdir=$(readlink -f $(dirname $0))
 export PYTHONPATH=$pkgdir/python
+
+
+# must define this outside
+# LCATR_INSTALL_AREA
+export LCATR_MODULES="$(dirname $pkgdir)/modulefiles"
 
 if [ -n "$1" ] ; then
     to_check=""

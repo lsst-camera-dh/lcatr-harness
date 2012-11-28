@@ -56,7 +56,9 @@ def test_env():
     c = config.Config(config=cfgfile)
     assert c.site == 'TESTSITE'
     #dump('After env',c)
-    return
+
+    c.local = 'testlocal'
+    assert not os.environ.get('LCATR_LOCAL')
 
 def test_dump():
     c = config.Config(config = cfgfile)
@@ -73,13 +75,16 @@ def test_incomplete():
     assert not c.complete(), 'Incomplete config object says it is complete'
     
 def test_missing():
+    '''
+    Check for missing or extra parameters
+    '''
     c = config.Config(filename=cfgfile)
     missing = set(c.missing())
     missed = set(['version', 'job_id', 'local', 'job', 'unit_id'])
     assert missing == missed, "Unexpected missing: %s != %s" % (sorted(missing),sorted(missed))
 
     e1 = set(c.extra())
-    e2 = set(['unknown_parameter','site'])
+    e2 = set(['unknown_parameter','site','modules'])
     assert e1 == e2, "Unexpected extra: %s != %s" %(e1,e2)
     return
 

@@ -7,6 +7,10 @@ from lcatr.harness import environment
 
 em = None
 
+def test_guess_modules_path():
+    'Test guessing the modules path'
+    print environment.guess_modules_path()
+
 def test_create():
     'Test creating interface to modules.sf.net'
 
@@ -35,8 +39,13 @@ def test_dump():
         continue
     return
 
-if __name__ == '__main__':
+
+def do_all():
+    test_guess_modules_path()
     test_create()
     test_load()
     test_unload()
     test_dump()
+
+if __name__ == '__main__':
+    do_all()

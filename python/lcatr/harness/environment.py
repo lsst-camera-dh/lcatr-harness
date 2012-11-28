@@ -66,6 +66,9 @@ def guess_modules_path():
     mp = os.environ.get('MODULEPATH')
     if mp: return mp
 
+    # try to find modulefiles/ based on where this file is.  this
+    # really shouldn't be used and instead be specified out-of-band by
+    # LCATR_MODULES env. var.
     path = __file__.split('/')
     if len(path) > 5:
         mpath = '/'.join(path[:-5] + ['modulefiles'])
@@ -77,7 +80,9 @@ def guess_modules_path():
 
 
 def resolve_modulepath(home, env = None, modpath = None):
-
+    """
+    Resolve the default modulepath in the way that the "module" command would.
+    """
     saved_environ = os.environ
     if env:
         os.environ = env
@@ -191,6 +196,10 @@ class Modules(object):
             })
 
         modpath = resolve_modulepath(home, env = self.env, modpath = modpath)
+
+        # insert lcatr job expectations
+        modpath = [self.install_area, self.modules] + modpath
+
         self.env['MODULEPATH'] = ':'.join(modpath)
 
         return
@@ -224,28 +233,10 @@ class Modules(object):
         # Check also for 'ERROR' because modulecmd lets errors sneak
         # by w/out an error return code
         if status or 'ERROR' in err:
-            msg = '%s\ncmd: "%s" with path: %s' % (err,' '.join(cmd), self.env['MODULEPATH'])
+            msg = '%s\ncmd: "%s" with path: %s' % \
+                (err,' '.join(cmd), self.env['MODULEPATH'])
             raise RuntimeError,msg
         return out
-
-    def resolve_mod_name(self, mod_name):
-        '''
-        A module name should be like <jobname>/<jobversion> but if the
-        modulefile is stored in the installation area then the name
-        has to be coerced to include "/modulefile".
-        '''
-        # we defer to installed modulefile files
-        maybe = mod_name + '/modulefile'
-
-        modfilepath = os.path.join(self.install_area, maybe)
-        try:
-            if os.path.exists(modfilepath):
-                return maybe
-        except TypeError,msg:
-            print 'Error checking for: "%s"' % modfilepath
-            raise
-        return mod_name
-        
 
     def do_cmd(self, cmd, mod_name, *args):
         '''
@@ -254,8 +245,6 @@ class Modules(object):
         Results are reflected in the .env dictionary of environment variables.
         '''
 
-        mod_name = self.resolve_mod_name(mod_name)
-        
         # use flavor "sh" as it's easier to parse and we don't want to
         # operate directly on os.environ like modules tries to force
         # on us.

@@ -258,6 +258,10 @@ The configuration parameters understood by the harness are:
 
  - =lims_url= :: the URL for the LIMS instance of the form =http://host:port/=
 
+ - =install_area= :: the root to where software packages are installed.
+
+ - =modules= :: the directory holding job harnessed /modulefiles/.
+
  - =dependencies= :: a colon-separated list of job name/version pairs
                      on which the current job depends.  Note, this is
                      for testing the harness independently from LIMS.
@@ -272,8 +276,6 @@ The configuration parameters understood by the harness are:
 
  - =modules_path= :: a colon-separated path of in which to search for
                      /modulefiles/.
-
- - =install_area= :: the root to where software packages are installed.
 
 
 * Job Environment 

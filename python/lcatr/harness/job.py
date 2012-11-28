@@ -41,6 +41,7 @@ class Job(object):
         'unit_type',    # type of unit (eg, CCD/RTM)
         'unit_id',      # The unique unit identifier
         'install_area', # base to where software is installed
+        'modules',      # where the job harnessed modulefiles can be found
         ]
 
 
@@ -116,8 +117,16 @@ class Job(object):
                  self.cfg.modules_version, self.cfg.modules_path)
         modfile = os.path.join(self.cfg.job, self.cfg.version)
         print 'Loading modfile: "%s"' % modfile
-        em.load(modfile)
+        try:
+            em.load(modfile)
+        except RuntimeError, msg:
+            print 'Got runtime error: "%s"' % msg
+            for k,v in em.env.iteritems():
+                if k.startswith(self.cfg.envvar_prefix):
+                    print '%s = %s' % (k,v)
+            raise
         self.em = em
+
         return
 
     def do_register(self):
