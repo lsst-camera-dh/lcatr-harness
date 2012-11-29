@@ -23,12 +23,9 @@
 #+LINK_HOME:
 #+XSLT:
 
-To facilitate organizing test software installation and environment
-configuration a few conventions are to be followed when installing
-LSST CCD acceptance testing or analysis software.  This document
-describes how test or analysis software should be installed and
-includes how the LCATR job harness and related code should be
-installed.
+This note describes how LSST CCD acceptance testing software and its
+governing job harness should be installed as well as how some
+top-level configuration must be done.
 
 * Test and Analysis Software
 
@@ -222,3 +219,15 @@ You should now be able to run this simple test:
 #+begin_example
 python -c 'from lcatr import schema; print schema.store'
 #+end_example
+
+* High Level Configuration
+
+Each software package should be configured as per the sections above.
+A few high-level settings are also needed.  These are:
+
+ - =install_area= :: the directory under which all required software
+                     is installed.
+
+ This can either be set in a job harness configuration file (see
+ [[./design.org]]) or as the =LCATR_INSTALL_AREA= environment variable.
+
