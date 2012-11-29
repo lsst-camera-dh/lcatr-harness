@@ -25,9 +25,17 @@
 
 To facilitate organizing test software installation and environment
 configuration a few conventions are to be followed when installing
-LSST CCD acceptance testing or analysis software.
+LSST CCD acceptance testing or analysis software.  This document
+describes how test or analysis software should be installed and
+includes how the LCATR job harness and related code should be
+installed.
 
-* Minimum Requirements
+* Test and Analysis Software
+
+The installation of the software packages that provide the elements of
+a test or analysis job is described in this section.
+
+** Minimum Requirements
 
 LSST CCD test or analysis software must provide two main programs: a
 /producer/ and a /validator/.  Their locations must be communicated to
@@ -35,7 +43,7 @@ the job harness by defining =LCATR_PRODUCER= and =LCATR_VALIDATOR=
 environment variables.  
 
 
-* Installation Locations
+** Software Installation Locations
 
 All software packages are to be installed to locations that follow the
 convention:
@@ -53,7 +61,8 @@ The value of =LCATR_INSTALL_AREA= is specific to the hosting computer
 and may be specified through the usual job harness configuration
 mechanism or in the calling environment.
 
-* Environment Management
+
+** Environment Management
 
 The job harness enforces consistent environment management of the
 various software packages through the use of the Environment Modules
@@ -66,7 +75,7 @@ writing a /modulefile/ simple.
 
 [fn:web] http://modules.sf.net/
 
-** Conventions for writing a /modulefile/
+*** Conventions for writing a /modulefile/
 
 The environment requirements placed on the software by the job harness
 can be satisfied by properly calling the function =lcatr_package=
@@ -83,7 +92,7 @@ relative to =$LCATR_INSTALL_AREA/<jobname>/<jobversion>/= and pointing
 to the /producer/ and /validator/ main programs, respectively.
 
 
-** Locating a /modulefile/
+*** Locating a /modulefile/
 
 The /modulefile/ for an installed instance of a package may be located
 as supported by the Environment Module Project system.  Ultimately the
@@ -119,3 +128,97 @@ By default the =MODULEPATH= variable is set to first check the install
 area before the central /modulefiles/ repository.
 
 [fn:mfgit] https://git.racf.bnl.gov/astro/cgit/lcatr/modulefiles.git/
+
+** Installation Methods
+
+This section gives some recommended installation methods.
+
+*** Simple Python Source Packages
+
+Packages that are comprised of Python source can be tested in place
+and installed in a simple manner.
+
+After tagging a particular commit prepare a source distribution with:
+
+#+begin_src sh
+git archive -o <jobname>-<jobversion>.tgz --format=tgz --prefix=<jobname>/<jobversion>/ <jobversion>
+#+end_src
+
+Install it via
+
+#+begin_src sh
+cd $LCATR_INSTALL_AREA
+tar -xzvf /path/to/<jobname>-<jobversion>.tgz
+#+end_src
+
+See above for issues involved in writing the /modulefile/.
+
+* Installation of Job Harness and Related Code
+
+It is up to the manager of each host computer to provision it with
+suitable versions of the job harness and supporting code (ie, the
+schema and modulefiles packages) as well ass provide some basic
+high-level environment settings.
+
+** Setting up a Python Virtual Environment
+
+The recommended way to install the job harness and supporting code is
+through a virtual environment[fn:venv].  This lets one use
+conventional tools (=pip=/=easy_install=) to install the code while
+not requiring elevated permissions.  It also allows maintaining
+different versions if required.
+
+[fn:venv] http://pypi.python.org/pypi/virtualenv
+
+Install =virtualenv=, make a virtual environment root area and
+activate it:
+
+#+begin_src sh
+virtualenv /path/to/lcatr/venv
+source /path/to/lcatr/venv/bin/activate
+#+end_src
+
+** Configuring the Python repository
+
+The job harness and related code is made available as Python packages
+which may be installed in the conventional manner using either =pip=
+or =easy_install=.  The packages are made available from[fn:pypicaveat]:
+
+#+begin_example
+http://lycastus.phy.bnl.gov/pypi/
+#+end_example
+
+To configure =pip= to use this server add the following to the file
+=~/.pip/pip.conf=:
+
+#+begin_example
+[global]
+index-url = http://lycastus.phy.bnl.gov/pypi/
+#+end_example
+
+To configure =easy_install= to use this server add the following to
+the file =~/.pydistutils.cfg=:
+ 
+#+begin_example
+[easy_install]
+index_url = http://lycastus.phy.bnl.gov/pypi/
+#+end_example
+
+[fn:pypicaveat] This is a temporary location and internal to BNL.
+
+** Installing Job Harness and Support Code
+
+After activating the virtual environment as above issue:
+
+#+begin_example
+pip install lcatr-harness
+pip install lcatr-schema
+#+end_example
+
+or similar if you elect to use =easy_install=.
+
+You should now be able to run this simple test:
+
+#+begin_example
+python -c 'from lcatr import schema; print schema.store'
+#+end_example
