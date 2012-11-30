@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 from glob import glob
 from distutils.core import setup
+
 setup(name='lcatr-harness',
       provides = ["lcatr.harness"],
-      requires = ["lcatr.schema"], 
+      requires = ["lcatr"], 
       version='0.1',
       url='https://git.racf.bnl.gov/astro/cgit/lcatr/harness.git',
       author='Brett Viren',
@@ -14,6 +15,7 @@ setup(name='lcatr-harness',
         ('doc',glob('doc/*.org')),
         ('tests', glob('tests/test_*.py') \
              + glob('tests/test_*.sh') \
+             + glob('tests/*.cfg') \
              + ['tests/fakelims.py'])
         ]
       )
