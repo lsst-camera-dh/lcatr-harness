@@ -116,7 +116,7 @@ class Job(object):
         em.setup(self.cfg.modules_home, self.cfg.modules_cmd, 
                  self.cfg.modules_version, self.cfg.modules_path)
         modfile = os.path.join(self.cfg.job, self.cfg.version)
-        print 'Loading modfile: "%s"' % modfile
+
         try:
             em.load(modfile)
         except RuntimeError, msg:
@@ -127,6 +127,8 @@ class Job(object):
             raise
         self.em = em
 
+        self._check_archive()
+
         return
 
     def do_register(self):
@@ -135,27 +137,54 @@ class Job(object):
         self.cfg.job_id = self.lims.jobid
         return
 
-    def stage_in(**depinfo):
+    def stage_in(self, **depinfo):
         'Stage in a dependency'
-        src = self.cfg.s('%(archive_user)s@%(archive_host)s:%(archive_root)s')
-        dst = self.cfg.stage_root
-        assert not os.path.exists(dst), 'Directory already exists: "%s"' % dst
+
+        dst_root = self.cfg.stage_root
+        if not os.path.exists(dst_root):
+            msg = 'Local stage root directory does not exists: %s' % dst_root
+            raise RuntimeError, msg
+
+        path = self.cfg.subdir_policy % depinfo
+        src = self.cfg.s('%(archive_user)s@%(archive_host)s:%(archive_root)s/') + path
+        dst = os.path.join(dst_root, path)
+
+        if os.path.exists(dst):
+            util.log.warning('Directory already staged: "%s"' % dst)
+            return
+
+        util.log.info('Staging from "%s" to "%s' % (src, dst))
+        rstat = remote.stat(src, host=self.cfg.archive_host, user=self.cfg.archive_user)
+        if rstat[0]:
+            msg = 'Failed to stat remote archive directory: %s' % src
+            raise RuntimeError, msg
+
         remote.rsync(src,dst)
         return
 
     def do_stage(self):
         'Ready the stage.'
-        for depinfo in self.lims.prereq: 
+
+        wd = self.cfg.subdir('stage')
+        if os.path.exists(wd):
+            msg = 'Working directory already exists: %s' % wd
+            util.log.error(msg)
+            raise RuntimeError, msg
+
+        for depinfo in self.lims.prereq:
             self.stage_in(**depinfo)
+            continue
+
+        util.log.info('Creating working directory: %s' % wd)
+        os.makedirs(wd)
+
         return
 
     def go_working_dir(self):
         '''
-        Assure the working directory exists and change to it.
+        Change to the working directory.
         '''
         wd = self.cfg.subdir('stage')
-        if not os.path.exists(wd):
-            os.makedirs(wd)
         util.log.debug('Changing to directory: %s' % wd)
         os.chdir(wd)
         return
@@ -176,7 +205,43 @@ class Job(object):
     def followup_validation(self):
         return
 
+    def _check_archive(self):
+        '''
+        Peak to see if the archive exists.
+        '''
+        rstat = remote.stat(self.cfg.archive_root,
+                            host=self.cfg.archive_host, user=self.cfg.archive_user)
+        if rstat[0]:
+            msg = 'Remote archive root does not exist: %s@%s:%s' % \
+                (self.cfg.archive_user, self.cfg.archive_host,self.cfg.archive_root)
+            raise RuntimeError, msg
+        return
+
     def do_archive(self):
+        'Archive results of a job.'
+
+        self._check_archive()
+
+        src = self.cfg.subdir('stage') + '/'
+        dst = self.cfg.s('%(archive_user)s@%(archive_host)s:')
+        dst += self.cfg.subdir('archive') + '/'
+        
+        if self.archive_exists():
+            msg = 'Archive destination directory already exists: %s' % dst
+            raise RuntimeError, msg
+
+
+        util.log.info('Making archive directory "%s' % dst)
+        ret = remote.cmd('mkdir -p %s' % self.cfg.subdir('archive'),
+                         host=self.cfg.archive_host, user=self.cfg.archive_user)
+        if ret[0]:
+            raise RuntimeError, \
+                'Failed to make archive directory with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret
+
+        util.log.info('Archiving from "%s" to "%s' % (src, dst))
+        ret = remote.rsync(src,dst)
+        if ret[0]:
+            raise RuntimeError, 'Archive failed with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret
         return
     
     def do_purge(self):

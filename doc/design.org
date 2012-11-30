@@ -428,7 +428,8 @@ registers the following information:
 LIMS replies to the query with the job ID.  If the job requires data
 produced by other, prior jobs the query will also return the
 registered information about those jobs necessary to locate their
-output files.
+output files.  See the document [[./lims-harness-api.org][The LIMS and Job Harness API]] for
+details on these parameters.
 
 
 ** Job Status Bookkeeping.

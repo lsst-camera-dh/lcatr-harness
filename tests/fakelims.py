@@ -60,7 +60,7 @@ class FakeLimsDB(object):
         Register a jobs information, return job ID
         """
         jobid = len(self.jobregs)
-        self.jobregs.append(kwds)
+        self.jobregs.append(dict(kwds, jobid=jobid))
         return jobid
 
     def registration(self, jobid):
@@ -129,15 +129,18 @@ class FakeLimsCommands(object):
                 tofind = dict(unit_type=unit_type, unit_id=unit_id, job=jn, version=jv)
                 jid = self.db.lookup(**tofind)
                 if jid is None:
+                    msg = 'Failed to find prerequisite: %s'%str(tofind)
+                    logging.error(msg)
                     return {'jobid':None, 
-                            'error':'Failed to find prerequisite: %s'%str(tofind)}
+                            'error':msg}
                 job_info = self.db.registration(jid)
                 ret.append(job_info)
                 continue
 
         jobid = self.db.register(unit_type=unit_type, unit_id=unit_id, 
                                  job=job, version=version, operator=operator)
-        return {'jobid':jobid, 'prereq':prereqs}
+
+        return {'jobid':jobid, 'prereq':ret}
 
     def cmd_update(self, step, status, stamp, jobid):
         "Update status for jobid step"

@@ -90,7 +90,7 @@ depends.
  - =jobid= :: the identifier to use for this job
  
  - =prereq= :: a list of dictionaries, each with keys named as the
-               post parameters as above plus an additional =jobid=
+               post parameters as above *plus an additional* =jobid=
                giving the registered job identifier for each.
 
 If an exception occurs no job identifier is allocated and an error

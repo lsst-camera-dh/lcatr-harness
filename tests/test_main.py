@@ -12,7 +12,7 @@ def test_cmdline():
     main.cmdline(['--config', cfgfile,
                   '--context','UNITTEST',
                   '--unit-id','4-1201',
-                  '--job-id','0',   # fixme: need to reslolve externally
+                  '--job-id','0', # note: this is normally given by LIMS
                   '--job', 'fake']) # version resolved in config file
 
 

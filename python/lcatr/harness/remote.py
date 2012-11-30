@@ -6,6 +6,7 @@ Handle accessing remote hosts
 
 import os
 import subprocess
+from util import log
 
 ssh_command = "ssh"             # rely on it being in PATH
 
@@ -13,12 +14,14 @@ def command(cmdstr):
     '''
     Run a command return (status,out,err)
     '''
+    log.info('Executing command: %s' % cmdstr)
     proc = subprocess.Popen(cmdstr, shell=True, 
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out,err = proc.communicate()
     status = proc.poll()
     if status == 255: 
         raise RuntimeError,'SSH cmd "%s" failed.' % (cmdstr)
+    log.info('Command returned status %d, out="%s" err="%s"' % (status,out,err))
     return status,out,err
 
 def cmd(cmdstr, host = "localhost", user = os.environ.get('USER')):

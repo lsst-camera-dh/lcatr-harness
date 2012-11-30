@@ -222,6 +222,11 @@ python -c 'from lcatr import schema; print schema.store'
 
 * High Level Configuration
 
+Some items need to be set up that are outside the scope of the job
+harness.
+
+** Indicating location of installed software
+
 Each software package should be configured as per the sections above.
 A few high-level settings are also needed.  These are:
 
@@ -230,4 +235,22 @@ A few high-level settings are also needed.  These are:
 
  This can either be set in a job harness configuration file (see
  [[./design.org]]) or as the =LCATR_INSTALL_AREA= environment variable.
+
+** Preparing The Results Archive and Local Stage
+
+Files resulting from a test or analysis job are first populated in the
+job's working directory which exists as a sub-directory rooted in the
+local stage file system.  When the job finishes successfully the
+result files will be copied to the central archive in a similarly
+named sub-directory.  If the job requires files produced by prior jobs
+the harness will copy these to the stage, preserving their
+sub-directory names.
+
+Before running any jobs the archive and local stage root must be
+created and be accessible by the harness (as they are specified with
+the relevant harness configuration parameters).  Any job specific
+directories in the archive or the local stage are created by the
+harness and it is an error if they preexist.  If other job output
+is found to preexist in the local stage it will used as-is.
+
 

@@ -94,7 +94,12 @@ class Results(object):
             log.error(msg)
             raise ValueError, msg
         self.jobid = jobid
-        self.prereq = res['prereq'] or list()
+        prereq = []
+        for pr in res['prereq']:
+            # LIMS API specifies "jobid" w/out a separator, harness has "job_id"
+            pr = dict(pr,job_id = pr['jobid'])
+            prereq.append(pr)
+        self.prereq = prereq
         return jobid
 
     def update(self, **kwds):

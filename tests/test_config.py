@@ -3,7 +3,7 @@
 Test the lcatr.harness.config module
 '''
 
-import os, socket
+import os
 from lcatr.harness import config
 import tempfile
 
@@ -19,20 +19,9 @@ def make_cfgfile():
 unit_type = CCD
 unknown_parameter = 42
 
-[local LTEST]
-local_root = /tmp
-site = TESTSITE
-
-[site TESTSITE]
-archive_root = /tmp
-archive_user = testuser
-archive_host = testhost
-host = %(host)s
-lims_url = http://localhost/
-
 [job fake]
 version = v0
-''' % { 'host': socket.gethostname()} )
+''')
     fd.flush()
     #fd.close() # <-- don't do it
     return fd, fn
@@ -63,8 +52,6 @@ def test_env():
 def test_dump():
     c = config.Config(config = cfgfile)
     assert c.unit_type == 'CCD'
-    assert c.archive_user == 'testuser'
-    #dump('Dump',c)
     return
 
 def test_incomplete():
@@ -81,7 +68,8 @@ def test_missing():
     c = config.Config(filename=cfgfile)
     missing = set(c.missing())
     missed = set(['version', 'job_id', 'local', 'job', 'unit_id'])
-    assert missing == missed, "Unexpected missing: %s != %s" % (sorted(missing),sorted(missed))
+    assert missing == missed, "Unexpected missing: %s != %s" % \
+        (sorted(missing),sorted(missed))
 
     e1 = set(c.extra())
     e2 = set(['unknown_parameter','site','modules'])

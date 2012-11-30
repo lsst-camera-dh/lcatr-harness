@@ -216,9 +216,9 @@ class Modules(object):
             args = list(args)
         cmd = [self.cmdstr, flavor] + args
         # FIXME: this should be properly logged, not printed.
-        print 'Running command: "%s", MODULEPATH="%s"' % (' '.join(cmd), self.env['MODULEPATH'])
-        
-        #print '\n'.join(['(%s)%s=(%s)%s'%(type(k),k,type(v),v) for k,v in self.env.iteritems()])
+        msg = 'Running command: "%s", MODULEPATH="%s"' % \
+            (' '.join(cmd), self.env['MODULEPATH'])
+        log.info(msg)
         for k,v in self.env.iteritems():
             assert type(k) == str and type(v) == str, 'bad: %s:%s'%(k,v)
         proc = subprocess.Popen(cmd,
@@ -226,8 +226,8 @@ class Modules(object):
                                 stderr = subprocess.PIPE,
                                 env = self.env)
         out,err = proc.communicate()
-        #print 'OUT:\nVVV\n%s\n^^^' % out
-        #print 'ERR:\nVVV\n%s\n^^^' % err
+        log.info('OUT:\nVVV\n%s\n^^^' % out)
+        log.info('ERR:\nVVV\n%s\n^^^' % err)
         status = proc.poll()
 
         # Check also for 'ERROR' because modulecmd lets errors sneak
@@ -263,7 +263,9 @@ class Modules(object):
                 var,val = line.split('=')
                 self.env[var] = val
                 continue
-            print 'unhandled line: "%s"' % line
+            msg = 'unhandled line in interpreting module environment: "%s"' % line
+            log.warning(msg)
+            print msg
             continue
         return
     

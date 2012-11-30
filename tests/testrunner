@@ -1,0 +1,105 @@
+#!/bin/bash
+
+whereami=$(dirname $(readlink -f $BASH_SOURCE))
+
+install_one () {
+    local pkg=$1 ; shift
+    local ver=$1 ; shift
+    local gitdir="$whereami/jobs/$pkg/.git"
+
+    pushd $LCATR_INSTALL_AREA  > /dev/null
+    GIT_DIR=$gitdir \
+        git archive --prefix=$pkg/$ver/ --format=tar $ver \
+        | tar -xf -
+    GIT_DIR=$gitdir \
+	git show-ref -s --tags $ver > $pkg/$ver/.lcatr_git_hash
+    popd > /dev/null
+    echo "Deployed to $LCATR_INSTALL_AREA package: $pkg version: $ver "
+}
+
+
+do_deploy () {
+    for what in station_A station_B ana_A
+    do
+	ver=$1 ; shift
+	if [ -z "$ver" ] ; then ver="v0"; fi
+	install_one example_$what $ver
+    done
+}
+
+setup_environment () {
+    local fs="/tmp/fake_lcatr"
+    rm -rf $fs			# wee!
+
+    local base="/home/bviren/work/lsst/fakeinst"
+    export PYTHONPATH="$base/python"
+    export LCATR_INSTALL_AREA="$fs/install_area"
+    if [ ! -d "$LCATR_INSTALL_AREA" ] ; then
+	mkdir -p "$LCATR_INSTALL_AREA" 
+	do_deploy 
+    fi
+    export LCATR_MODULES="$base/modulefiles"
+
+    export LCATR_STAGE_ROOT="$fs/stage"
+    if [ ! -d "$LCATR_STAGE_ROOT" ] ; then
+	mkdir -p $LCATR_STAGE_ROOT
+    fi
+
+    export LCATR_ARCHIVE_ROOT="$fs/archive"
+    if [ ! -d "$LCATR_ARCHIVE_ROOT" ] ; then
+	mkdir -p $LCATR_ARCHIVE_ROOT
+    fi
+
+    export LCATR_ARCHIVE_USER=$USER
+    export LCATR_ARCHIVE_HOST=localhost
+
+    export LCATR_LIMS_URL="http://localhost:9876/"
+}
+
+lims_pid=""
+spawn_lims () {
+    local testdir="$whereami/tests"
+    python $testdir/fakelims.py > /dev/null 2>&1 &
+    lims_pid=$!
+    sleep 1
+    echo "Started fake LIMS on PID=$lims_pid"
+}
+
+reap_lims () {
+    if [ -z "$lims_pid" ] ; then
+	echo "Warning: no LIMS started, no lims killed"
+	return
+    fi
+    echo "Killing PID=$lims_pid"
+    kill $lims_pid
+}
+
+do_test () {
+    local testname=$1 ; shift
+    local testdir="$whereami/tests"
+    python $testdir/test_${testname}.py
+}
+
+do_test_all () {
+    local testdir="$whereami/tests"
+    local log="test_all.log"
+    for testpy in $testdir/test_*.py
+    do
+	echo "Test: $test_py" >> $log
+	date >> $log
+	python $testpy >> $log 2>&1
+	if [ "$?" = "0" ] ; then
+	    echo "SUCCESS: $testpy"
+	else
+	    echo "FAILURE: $testpy"
+	fi
+    done
+    echo "See $log and lcatr_harness.log for details"
+}
+
+spawn_lims
+setup_environment
+cmd=$1 ; shift
+do_$cmd $@
+reap_lims
+
