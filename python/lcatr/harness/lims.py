@@ -75,7 +75,7 @@ class Results(object):
         try:
             jres = json.loads(page)
         except ValueError, msg:
-            print 'Failed to load return page with %s %s got:\n%s' % (qdata, url, page)
+            print 'Failed to load return page with qdata="%s" url="%s" got:\n%s' % (qdata, url, page)
             raise
         return jres
         
@@ -120,13 +120,13 @@ class Results(object):
         return res['acknowledge']
 
 
-    def ingest(self, **kwds):
+    def ingest(self, result):
         '''
-        Send a summary <result> list to LIMS.  Return None if accepted
+        Ingest a summary <result> list to LIMS.  Return None if accepted
         or an explanation string if LIMS thinks the caller should
         terminate.
         '''
-        res = self.make_query('result',**kwds)
+        res = self.make_query('ingest', result=result)
         return res['acknowledge']
 
 

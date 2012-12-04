@@ -382,15 +382,12 @@ arguments.  It is run from the same directory as was the producer and
 any output it creates is logged.  It too must return a nonzero error
 code to indicate failure.
 
-In addition to performing whatever validation is required by the test
-developer the validation program must produce a single meta-data file
-(called =metadata.fits=) and one or more results summary files in
-formats and schema specific to the job.  These two files will
-eventually be loaded into the LIMS database by the LIMS ingest process
-described elsewhere.  Details of these file formats, schema and
-validations are in the note "[[./schema.org][LSST CCD Acceptance Testing File Schema]]".
-The harness will run the validation routines associated with each
-file's schema.
+In addition to performing whatever validation is required by the
+validation program must produce a file containing a summary of the
+results to be uploaded to the LIMS database.  This file should be in a
+format described in the document "[[../../schema/doc/schema.org][LCATR Schema]]".  The file should be
+named =summary.lims=.  The harness will implicitly check the contents
+of this file against its declared schemas.
 
 * LIMS
 

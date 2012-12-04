@@ -14,6 +14,7 @@ import os
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import cgi
 import json
+import time
 import collections
 from sys import stderr
 
@@ -149,6 +150,8 @@ class FakeLimsCommands(object):
 
     def cmd_ingest(self, result, stamp, jobid):
         "Ingest the result summary data."
+        logging.info('Result from jobid %d at %s:'%(jobid, time.asctime(time.localtime(stamp))))
+        logging.info(str(result))
         return {'acknowledge': None}
 
     pass
@@ -209,7 +212,7 @@ class FakeLimsHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
         ret = lims_commands(cmd, **pvars)
-        logging.info(ret)
+        logging.debug('RET:%s'%str(ret))
         try:
             jstr = json.dumps(ret)
         except TypeError,msg:

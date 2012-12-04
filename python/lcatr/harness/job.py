@@ -6,6 +6,7 @@ LSST CCD Acceptance Testing Running of Jobs
 
 import os
 from lcatr.harness import remote, environment, lims, util
+import lcatr.schema
 
 class Job(object):
     '''
@@ -26,7 +27,6 @@ class Job(object):
 
     '''
 
-    
     required_parameters = [
         'lims_url',   # Base LIMS URL
         'job',        # Canonical name of the job
@@ -46,8 +46,8 @@ class Job(object):
 
 
     # The list of steps and how/whether to report to LIMS
-    all_steps = ['configure','register','stage','produce','validate','archive','purge']
-    report_as = [None,'configured','staged','produced','validated','archived','purged']
+    all_steps = ['configure','register','stage','produce','validate','archive','ingest','purge']
+    report_as = [None,'configured','staged','produced','validated','archived',None, 'purged']
 
     def __init__(self, cfg):
         '''
@@ -82,9 +82,10 @@ class Job(object):
             try:
                 meth()
             except Exception,err:
-                util.log.error('Error with step %s: %s' % (step,str(err)))
+                msg = 'Error with step %s: %s' % (step, err)
+                util.log.error(msg)
                 if self.lims and stepped:
-                    self.lims.update(step=stepped,status=err)
+                    self.lims.update(step=stepped,status=msg)
                 raise
             else:
                 util.log.info('Step %s completed' % step)
@@ -104,7 +105,7 @@ class Job(object):
         - modulefile
 
         All parameters are applied by going calling the .em.execute()
-        method to execute external programs.
+        method to execute external programs. 
         '''
         
         env = dict(os.environ)  # calling environment
@@ -126,6 +127,12 @@ class Job(object):
                     print '%s = %s' % (k,v)
             raise
         self.em = em
+
+        # This needs to be imported so our own attempts at validating
+        # the result summary data can find potential schema files.
+        if em.env.has_key('LCATR_SCHEMA_PATH'):
+            os.environ['LCATR_SCHEMA_PATH'] = em.env['LCATR_SCHEMA_PATH']
+        lcatr.schema.load_all()
 
         self._check_archive()
 
@@ -203,6 +210,7 @@ class Job(object):
         return
 
     def followup_validation(self):
+        self.result = lcatr.schema.validate_file()
         return
 
     def _check_archive(self):
@@ -244,6 +252,13 @@ class Job(object):
             raise RuntimeError, 'Archive failed with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret
         return
     
+    def do_ingest(self):
+        '''
+        Upload to lims
+        '''
+        self.lims.ingest(self.result) # self.result filled in do_validate()
+        return
+
     def do_purge(self):
         return
 
