@@ -16,6 +16,6 @@ setup(name='lcatr-harness',
         ('tests', glob('tests/test_*.py') \
              + glob('tests/test_*.sh') \
              + glob('tests/*.cfg') \
-             + ['tests/fakelims.py'])
+             + ['tests/fakelims.py'+'tests/make-fakeinst.sh'])
         ]
       )

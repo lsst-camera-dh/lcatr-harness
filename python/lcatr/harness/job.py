@@ -132,6 +132,8 @@ class Job(object):
         # the result summary data can find potential schema files.
         if em.env.has_key('LCATR_SCHEMA_PATH'):
             os.environ['LCATR_SCHEMA_PATH'] = em.env['LCATR_SCHEMA_PATH']
+        print 'Loading schema with schema path: "%s"' % \
+            em.env.get('LCATR_SCHEMA_PATH')
         lcatr.schema.load_all()
 
         self._check_archive()
@@ -145,7 +147,7 @@ class Job(object):
         return
 
     def stage_in(self, **depinfo):
-        'Stage in a dependency'
+        'Stage in a dependency, return path to staged directory'
 
         dst_root = self.cfg.stage_root
         if not os.path.exists(dst_root):
@@ -158,7 +160,7 @@ class Job(object):
 
         if os.path.exists(dst):
             util.log.warning('Directory already staged: "%s"' % dst)
-            return
+            return dst
 
         util.log.info('Staging from "%s" to "%s' % (src, dst))
         rstat = remote.stat(src, host=self.cfg.archive_host, user=self.cfg.archive_user)
@@ -167,7 +169,7 @@ class Job(object):
             raise RuntimeError, msg
 
         remote.rsync(src,dst)
-        return
+        return dst
 
     def do_stage(self):
         'Ready the stage.'
@@ -178,13 +180,16 @@ class Job(object):
             util.log.error(msg)
             raise RuntimeError, msg
 
+        deppath = []
         for depinfo in self.lims.prereq:
-            self.stage_in(**depinfo)
+            depdir = self.stage_in(**depinfo)
+            deppath.append(depdir)
             continue
 
         util.log.info('Creating working directory: %s' % wd)
         os.makedirs(wd)
 
+        self.em.env['LCATR_DEPENDENCY_PATH'] = ':'.join(deppath)
         return
 
     def go_working_dir(self):

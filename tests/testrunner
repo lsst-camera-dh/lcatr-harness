@@ -8,7 +8,8 @@ install_one () {
     local ver=$1 ; shift
     local gitdir="$whereami/jobs/$pkg/.git"
 
-    pushd $LCATR_INSTALL_AREA  > /dev/null
+    echo "Installing from: $gitdir"
+    pushd $LCATR_INSTALL_AREA > /dev/null
     GIT_DIR=$gitdir \
         git archive --prefix=$pkg/$ver/ --format=tar $ver \
         | tar -xf -
@@ -32,14 +33,15 @@ setup_environment () {
     local fs="/tmp/fake_lcatr"
     rm -rf $fs			# wee!
 
-    local base="/home/bviren/work/lsst/fakeinst"
-    export PYTHONPATH="$base/python"
-    export LCATR_INSTALL_AREA="$fs/install_area"
+    export PYTHONPATH="$whereami/python"
+    ## fixme: don't deploy, see make-fakeinst.sh - need to integrate it here
+    #export LCATR_INSTALL_AREA="$fs/install_area"
+    export LCATR_INSTALL_AREA="$(readlink -f jobs)" 
     if [ ! -d "$LCATR_INSTALL_AREA" ] ; then
 	mkdir -p "$LCATR_INSTALL_AREA" 
 	do_deploy 
     fi
-    export LCATR_MODULES="$base/modulefiles"
+    export LCATR_MODULES="$whereami/modulefiles"
 
     export LCATR_STAGE_ROOT="$fs/stage"
     if [ ! -d "$LCATR_STAGE_ROOT" ] ; then
