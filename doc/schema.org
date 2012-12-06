@@ -1,0 +1,148 @@
+#+TITLE: LCATR Schema
+#+SETUPFILE: setup.org
+
+
+* What is a schema
+
+Every LSST CCD acceptance test (or analysis) must produce some summary
+of its results so that it may later be queried.  Such queries are done
+through the LIMS database and so the summary information must be
+produced in a format suitable to loading into the database tables.
+The database requires that tables are strictly defined and that any
+modifications must be carefully enacted so as to preserve the
+usefulness of existing entries.  At the same time a simple and loose
+coupling between test software and the database is desired.
+
+This means that the developers of tests (and analysis) software are
+not free to produce result summaries in just any manner.  It is
+emphasized that this restriction is limited to the result summary
+only; the software is free to produce any manner output files (or
+other form) that are not otherwise destined for the database.  It is,
+then, only the result summary data that must follow a strict,
+well-defined format both in terms of structure and expected content.
+This expectation is formalized into what is called the result summary
+/schema/.
+
+The overall schema of a result summary is a list of parts.  Each part
+follows its own specific schema and collects together related
+information.  This part schema (from now, just "schema") is identified
+by a name and a version.  Ultimately, each part of a summary is mapped
+to a database table row.
+
+
+* Defining a schema
+
+Both the schema and its conforming data structure are represented in
+Python as simple, flat dictionaries with the same keys.  Both are
+conceptually separated into two parts.  The first is the /schema
+identifier/ made up of items with the keys =schema_name= (value type
+is =str=) and =schema_version= (value type is =int=).  The second
+contains the /payload/.  The schema payload values hold a simple
+Python type class (one of =int=, =float= or =str=) while the data
+structure payload values hold value that are of (or can be cast to)
+their corresponding type.
+
+A data structure is conforming to a schema only if their schema
+identifiers match exactly, their set of payload keys match exactly and
+each payload value in the data structure has the same type (or can be
+cast to one) consistent with the one in the schema.
+
+** Schema Versioning
+
+The =schema_version= item of a /schema identifier/ is a simple integer
+starting at 0 for the initial version of the schema and is incremented
+by one each time a change to the schema must be made.  Old versions
+should be retained in full.
+
+Changes to schema are best minimized.  Once production data has been
+written to the database using a version of a schema significant effort
+is required to enact a change in that schema.  How such /schema
+evolution/ is handled depends on the nature of the change and is
+beyond the scope of this document.
+
+See below for example code showing how to access different versions of
+a schema.
+
+* Simple Schema Examples
+
+A very simple example is a schema which describes the average and
+spread of some distributed quantities is given in this section.  The
+schema might initially be written in Python like the following:
+
+#+BEGIN_SRC Python
+s0 = {
+  "schema_name": "average",
+  "schema_version": 0,
+  "mean": float,
+  "rms": float
+}
+#+END_SRC
+
+Later, it may become apparent that in order to correctly combine
+multiple such entries as well as produce a combined RMS that the data
+to be recorded must be modified.  In this case a new version would be
+needed that might look like:
+
+#+BEGIN_SRC Python
+s1 = {
+  "schema_name": "average",
+  "schema_version": 1,
+  "count": int,
+  "sum": float,
+  "sum2": float
+}
+#+END_SRC
+
+The version is incremented.  To migrate the database the corresponding
+table a new table would need to be defined, created and filled and the
+old table dropped.
+
+* Persisting Schema Definitions
+
+Schema can be serialized and persisted (saved to file) for later use.
+Either a single schema or a simple list of them can be saved to a
+file.  The =lcatr.schema= module provides a function to save the file.
+
+#+BEGIN_SRC Python
+from lcatr.schema import save
+lst = [s0, s1]
+save(lst, "example.schema")
+#+END_SRC
+
+These schema description files can be created in this manner or by
+hand.  They can be written either as Python source code or following
+the JSON format.  An optional third argument to =save()= can specify
+which of these two formats to write.
+
+** Schema File Loading
+
+When the =lcatr.schema= module is imported it will check for an
+environment variable =LCATR_SCHEMA_PATH= and collect all files found
+in the directories specified which have a =.schema= extension.  The
+files will be read and parsed assuming they contain a serialized JSON
+string described above.
+
+* Access a Schema Definition
+
+The =lcatr.schema= module provides the function
+=get(name,version=None)= that returns the a schema dictionary for the
+given name and version.  If version is not specified then the schema
+with the largest version number is returned.
+
+* Standard Schema
+
+Some schema are common enough to be shared to summarize multiple tests
+and analyses.  
+
+** File references
+
+As emphasized above, while the result summary must adhere to the
+strict form described in this document, a result may include any
+number of addition output in the form of files.  If these files are to
+be kept in the archive and tracked by LIMS a /file reference/ part
+should be included in the result summary, one for each file.  The
+schema for a file reference called =fileref= and is defined in
+automatically by the =lcatr.schema= module.  A compliant data
+structure suitable for adding to the result summary can be created
+with =lcatr.schema.fileref(path)= where the path is relative to the
+job's current working directory.

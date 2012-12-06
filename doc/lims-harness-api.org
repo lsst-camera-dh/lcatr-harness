@@ -1,27 +1,5 @@
 #+TITLE: The LIMS and Job Harness API
-#+AUTHOR: Brett Viren
-#+EMAIL: bv@bnl.gov
-#+DATE: \today
-
-#+LATEX_HEADER: \usepackage{hyperref}
-#+LATEX_HEADER: \hypersetup{
-#+LATEX_HEADER:   hyperindex=true,
-#+LATEX_HEADER:   plainpages=false,
-#+LATEX_HEADER:   colorlinks=true,
-#+LATEX_HEADER:   linkcolor=black
-#+LATEX_HEADER: }
-
-#+DESCRIPTION:
-#+KEYWORDS:
-#+LANGUAGE:  en
-#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
-#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
-#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
-#+EXPORT_SELECT_TAGS: export
-#+EXPORT_EXCLUDE_TAGS: noexport
-#+LINK_UP:
-#+LINK_HOME:
-#+XSLT:
+#+SETUPFILE: setup.org
 
 
 The LCATR job harness communicates with LIMS in order to register job
@@ -159,7 +137,7 @@ that contains at least these entries:
                        follows.
 
 The payload of the actual result summary is sent as additional
-entries.  More information about schemas is in the "LCATR Schema"
+entries.  More information about schemas is in the "[[./schema.org][LCATR Schema]]"
 document.
 
 Both the nominal and the exceptional response has a single key:

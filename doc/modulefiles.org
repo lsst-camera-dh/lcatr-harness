@@ -1,27 +1,5 @@
 #+TITLE: Describing LSST Sensor Test Software Environment with Modules
-#+AUTHOR: Brett Viren
-#+EMAIL: bv@bnl.gov
-#+DATE: \today
-
-#+LATEX_HEADER: \usepackage{hyperref}
-#+LATEX_HEADER: \hypersetup{
-#+LATEX_HEADER:   hyperindex=true,
-#+LATEX_HEADER:   plainpages=false,
-#+LATEX_HEADER:   colorlinks=true,
-#+LATEX_HEADER:   linkcolor=black
-#+LATEX_HEADER: }
-
-#+DESCRIPTION:
-#+KEYWORDS:
-#+LANGUAGE:  en
-#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
-#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
-#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
-#+EXPORT_SELECT_TAGS: export
-#+EXPORT_EXCLUDE_TAGS: noexport
-#+LINK_UP:
-#+LINK_HOME:
-#+XSLT:
+#+SETUPFILE: setup.org
 
 #+BEGIN_ABSTRACT
 NOTE: THIS IS STILL IN DRAFT FORM.  This note describes how
@@ -36,16 +14,18 @@ performs analysis on station output) must be managed in terms of the
 versions employed and the run-time environment supplied.  The software
 must run at more than one site and on diverse platforms and their
 results must be merged, organized and made available to the
-collaboration.  The execution of all software controlled with a common
-job harness (see [[./jobharness.org]]).  The environment is controlled
-using "Modules" (see http://modules.sf.net) as described here.
+collaboration.  The execution of all software is controlled with a
+common job harness (see the document "[[./jobharness.org][LSST CCD Test Job Harness]]").
+The environment is controlled using "Environment Modules" (see
+http://modules.sf.net) as described here.
 
 The environment for each installed version of a test software package
-is defined in so called /modulefiles/.  A set of conventions are
+is defined in a so called /modulefile/.  A set of conventions are
 chosen to simplify writing these files and to supply information
 needed for the job harness and for recording what version of the
-software was run.  Some additional environment variables are provided
-to the software by the job harness.
+software was run.  These conventions also govern installation as
+described in the document "[[./installation.org][LCATR Job Installation]]".  Some additional
+environment variables are provided to the software by the job harness.
 
 * Package Installation
 

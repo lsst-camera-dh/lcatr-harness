@@ -1,29 +1,5 @@
 #+TITLE: LSST CCD Test Job Harness
-#+AUTHOR: Brett Viren
-#+EMAIL: bv@bnl.gov
-#+DATE: \today
-
-#+LATEX_HEADER: \usepackage{hyperref}
-#+LATEX_HEADER: \hypersetup{
-#+LATEX_HEADER:   hyperindex=true,
-#+LATEX_HEADER:   plainpages=false,
-#+LATEX_HEADER:   colorlinks=true,
-#+LATEX_HEADER:   linkcolor=black
-#+LATEX_HEADER: }
-
-#+DESCRIPTION:
-#+KEYWORDS:
-#+LANGUAGE:  en
-#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
-#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
-#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
-#+EXPORT_SELECT_TAGS: export
-#+EXPORT_EXCLUDE_TAGS: noexport
-#+LINK_UP:
-#+LINK_HOME:
-#+XSLT:
-
-#+MACRO: envprefix LCATR_
+#+SETUPFILE: setup.org
 
 #+BEGIN_ABSTRACT
 The individual CCDs and their larger aggregates in the form of RTMs
@@ -206,7 +182,7 @@ perform the following tasks:
    non-zero code if validation fails.
 
  - Produce one or more /result summary/ files (see note on 
-   "[[schema.org][LSST CCD Acceptance Testing File Schema]]")
+   "[[./schema.org][LCATR Schema]]")
 
  - Produce a single /meta data/ file (see same note) with the name of
    =metadata.fits=.
@@ -248,7 +224,7 @@ The parameters are resolved in four steps:
     parameters.
 
  2) Configuration files are checked and any parameters defined in
-    named "=[DEFAULT]=" will update the configuration.
+    named =[DEFAULT]= will update the configuration.
 
  3) Explicit arguments are applied to the configuration.
 
@@ -261,7 +237,7 @@ Specifics of each configuration step are given in the following sections.
 
 Configuration parameters may be specified with environment variables.
 Their names should be constructed by the capitalized parameter name
-with "{{{envprefix}}}".
+with ={{{envprefix}}}=.
 
 ** Configuration files
 
@@ -274,14 +250,14 @@ The files checked are:
 #+end_example
 
 They may provide configuration parameters in two ways.  First, the
-"=[DEFAULT]=" section overrides parameters supplied by environment
+=[DEFAULT]= section overrides parameters supplied by environment
 variables but may be further overridden by those explicitly supplied
 (see below)
 
 Second, after the command line parameters are applied the files are
 checked a second time for any sections that match the key/value name
-of any existing parameters.  For example a section named "=[site
-BNL]=" matches the parameter "=site=" with the value "=BNL=".  Any
+of any existing parameters.  For example a section named =[site
+BNL]= matches the parameter =site= with the value =BNL=.  Any
 parameters listed in the section will be applied.  If they are not yet
 set they will be but they will not override previously set parameters.
 That is, they provide a set of default tied to the setting of some
@@ -302,7 +278,7 @@ given zero or more parameters using command line arguments like:
 #+end_example
 
 These explicit parameters will override any of the same names provided
-by the environment or by any "=[DEFAULT]=" sections of configuration
+by the environment or by any =[DEFAULT]= sections of configuration
 files.
 
 ** List of Configuration Parameters
@@ -374,7 +350,5 @@ environment variables or the harness will attempt to guess the
 locations.
 
 
-
------
 
 

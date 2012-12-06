@@ -1,3 +1,6 @@
+#+TITLE: LCATR Job Developer Instructions
+#+SETUPFILE: setup.org
+
 Instructions for an LSST CCD Test Software Developer
 
 This document describes the steps needed to make LSST CCD (or RTM)
@@ -46,7 +49,7 @@ system locations below).
 the validator program has two responsibilities.  It should perform any
 validation on the output of the producer that the author sees fitting
 and it should produce a =summary.lims= file that is in a
-schema-compliant format.  (See the document [[LCATR Schema]]).
+schema-compliant format.  (See the document "[[./schema.org][LCATR Schema]]").
 
 * Run time environment
  

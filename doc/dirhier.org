@@ -1,27 +1,5 @@
 #+TITLE: Global organization of results and source files for LSST CCD testing
-#+AUTHOR: Brett Viren
-#+EMAIL: bv@bnl.gov
-#+DATE: \today
-
-#+LATEX_HEADER: \usepackage{hyperref}
-#+LATEX_HEADER: \hypersetup{
-#+LATEX_HEADER:   hyperindex=true,
-#+LATEX_HEADER:   plainpages=false,
-#+LATEX_HEADER:   colorlinks=true,
-#+LATEX_HEADER:   linkcolor=black
-#+LATEX_HEADER: }
-
-#+DESCRIPTION:
-#+KEYWORDS:
-#+LANGUAGE:  en
-#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
-#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
-#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
-#+EXPORT_SELECT_TAGS: export
-#+EXPORT_EXCLUDE_TAGS: noexport
-#+LINK_UP:
-#+LINK_HOME:
-#+XSLT:
+#+SETUPFILE: setup.org
 
 #+BEGIN_ABSTRACT
 This note describes the organization of LSST CCD test result files and
@@ -70,6 +48,7 @@ Where =<NAME>= is replaced by the (capitalized) canonical name of the
 test software that produced it.  The test software relies on a static
 naming convention for locating files or sub-directories at this
 location.
+
 
 * Software Installation Environment
 
