@@ -1,0 +1,106 @@
+Instructions for an LSST CCD Test Software Developer
+
+This document describes the steps needed to make LSST CCD (or RTM)
+test or analysis software work in a production setting.
+
+* Context
+
+Your software that performs a CCD (or RTM) test or the analysis of
+test output must adhere to several requirements in order for it to run
+in a production setting.  These requirements govern, among other
+things:
+
+ - control over which version of your software is run 
+
+ - software installation and run-time environment
+
+ - output archive and run-time file system locations
+
+ - summary result format and upload to database
+
+ - result production and validation
+
+To assure requirements are met your software is not directly run by an
+operator (user) but is run through a "shim" program called the /job
+harness/.
+
+* Structure of your software
+
+You are free to write you software in any manner however the job
+harness expects two entries into your software.  It may be necessary
+to write scripts to satisfy these entry points.  The harness will run
+two executable programs (or scripts) called the /producer/ and the
+/validator/.  Both are run with no command line arguments and are
+expected to return a =0= exit code on success.  Any required input is
+through the environment.
+
+** The Producer
+
+The producer program is meant to run the primary functionality of test
+or analysis software.  It is free to produce any needed output files
+free of any restriction (except location, see the section on file
+system locations below).
+
+** The Validator
+
+the validator program has two responsibilities.  It should perform any
+validation on the output of the producer that the author sees fitting
+and it should produce a =summary.lims= file that is in a
+schema-compliant format.  (See the document [[LCATR Schema]]).
+
+* Run time environment
+ 
+The harness controls the environment and file system location in and
+from which your software runs.
+
+** Environment
+
+There are two aspects to the environment for your software to be aware
+of: variables it must provide and variables it may want to make use
+of.
+
+The environment that must be provided is done so through an
+environment module /modulefile/.  Details are in the document
+[[./modulefiles.org][Describing LSST Sensor Test Software Environment with Modules]].  In
+most cases the modulefile can be written in a trivial fashion.
+
+The one variable that your software may want to make use of directly
+or indirectly is =LCATR_DEPENDENCY_PATH=.  This variable holds a
+":"-delimited list of directories that contain output from the prior
+jobs run on the same CCD (or RTM) that your software is running on.
+This path is the sole mechanism for dependent packages to find input
+files that were produced as output from prior jobs.  If you write your
+producer in Python you can use the following function to help search
+this path:
+
+#+BEGIN_SRC Python
+lcatr.harness.helpers.dependency_glob()
+#+END_SRC
+
+
+** File system Locations
+
+The harness will run the producer and validator programs from a
+specific directory named after parameters such as your software's name
+and version, the unit type (CCD or RTM) and the unique unit and job
+identifiers.  This directory will be created, and possibly purged, by
+the harness.  Your software should only write file inside this
+directory.  The harness will copy all files written to it to the
+permanent archive.
+
+As described above, any required input files that are produced by runs
+of other jobs should only be found by checking directories listed in
+the =LCATR_DEPENDENCY_PATH=.
+
+* Installation
+
+All test software that will run on a host is installed to a central
+/install area/ location and is installed following the document [[./installation.org][LCATR
+Job Installation]].
+
+* Testing the Harness
+
+Making your software run under the job harness requires several things
+to all be working correctly.  Ultimately it must work fully installed
+but during development adding an installation step to the run-debug
+loop is prohibitive.  FIXME: implement and document test mode.
