@@ -3,12 +3,30 @@
 # build out a fake installation that lets one run the code in-place
 # Run this in the directory that holds lcatr/
 
-lcatrurl="https://git.racf.bnl.gov/astro/git/lcatr"
+usage () {
+    cat <<EOF
+make-fakeinst.sh [srcdir [destdir [url]]]
+EOF
+}
 
 base=$1 ; shift
+dest=$1 ; shift
+lcatrurl=$1 ; shift
+
 if [ -z "$base" ] ; then
     base=$(pwd)/lcatr
 fi
+base=$(readlink -f $base)
+
+if [ -z "$dest" ] ; then
+    dest=fakeinst
+fi
+dest=$(readlink -f $dest)
+
+if [ -z "$lcatrurl" ] ; then
+    lcatrurl="https://git.racf.bnl.gov/astro/git/lcatr"
+fi
+
 
 # get the source code
 if [ ! -d $base ] ; then
@@ -31,14 +49,7 @@ if [ ! -d $base ] ; then
     done
     popd
 fi
-base=$(readlink -f $base)
 
-# make the install area
-dest=$1 ; shift
-if [ -z "$dest" ] ; then
-    dest=fakeinst
-fi
-dest=$(readlink -f $dest)
 
 mklink () {
     src=$1 ; shift

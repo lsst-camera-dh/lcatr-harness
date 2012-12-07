@@ -3,147 +3,157 @@
 
 Instructions for an LSST CCD Test Software Developer
 
-This document describes the steps needed to make LSST CCD (or RTM)
-test or analysis software work in a production setting.
+This document describes the steps needed to make your LSST CCD (or
+RTM) test or analysis software work in a production setting.  Besides
+the first section it gives only brief instructions; the "what to do"
+if not the "why to do it".
 
-* Context
+* Introduction
 
-Your software that performs a CCD (or RTM) test or the analysis of
+Your software which performs a CCD (or RTM) test or an analysis of
 test output must adhere to several requirements in order for it to run
-in a production setting.  These requirements govern, among other
-things:
+in a production setting.  In order to assure requirements are met your
+software is not directly run by an operator (user) but rather is run
+through a "shim" program called the /job harness/.  To "glue" your
+software to this shim you must satisfy the following steps:
 
- - control over which version of your software is run 
+ 0) Develop your software.  This can be done separately from the rest
+    of the steps but they are best taken under consideration.
 
- - software installation and run-time environment
+ 1) Develop the two main programs called by the harness.
 
- - output archive and run-time file system locations
+ 2) Provide a file that describes the required environment variables.
 
- - summary result format and upload to database
+ 3) Pushed tagged releases of your software into a remote git
+    repository.
 
- - result production and validation
+ 4) Provide suitable installation instructions or mechanisms.
 
-To assure requirements are met your software is not directly run by an
-operator (user) but is run through a "shim" program called the /job
-harness/.
+The instructions for each step are described in detail in the rest of
+this document.  In addition, for information about testing your
+software under the job harness see the document "[[./testing.org][LCATR Testing]]".
 
-* Structure of your software
+* Develop your software
 
-You are free to write you software in any manner however the job
-harness expects two entries into your software.  It may be necessary
-to write scripts to satisfy these entry points.  The harness will run
-two executable programs (or scripts) called the /producer/ and the
-/validator/.  Both are run with no command line arguments and are
-expected to return a =0= exit code on success.  Any required input is
-through the environment.
+Your software may be written in a variety of ways but some general
+rules to keep in mind:
 
-** The Producer
+ - it must run in "batch" or command line mode and not require any
+   interactive input.  
 
-The producer program is meant to run the primary functionality of test
-or analysis software.  It is free to produce any needed output files
-free of any restriction (except location, see the section on file
-system locations below).
+ - it must write any important output files to the current working
+   directory, writing outside of this directory is not allowed.
 
-** The Validator
+ - it should name files in a static manner and not encode variable
+   information such as the CCD ID, time stamps.  This rule is
+   particularly important for any files that must be read into
+   subsequent analysis jobs
 
-the validator program has two responsibilities.  It should perform any
-validation on the output of the producer that the author sees fitting
-and it should produce a =summary.lims= file that is in a
-schema-compliant format.  (See the document "[[./schema.org][LCATR Schema]]").
+ - if it requires a MS Windows host it must be able to run from the
+   Cygwin environment
 
-* Run time environment
- 
-The harness controls the environment and file system location in and
-from which your software runs.
 
-** Environment
+* Two main programs
 
-There are two aspects to the environment for your software to be aware
-of: variables it must provide and variables it may want to make use
-of.
+The harness will run two programs one after the other which are
+provided by your software.  They may be named as you like but first is
+identified as the /producer/ and the second as the /validator/.  They
+will likely be written as interpreted scripts but need not be.
 
-The environment that must be provided is done so through an
-environment module /modulefile/.  Details are in the document
-[[./modulefiles.org][Describing LSST Sensor Test Software Environment with Modules]].  In
-most cases the modulefile can be written in a trivial fashion.
+The /producer/ program is meant to perform the primary functionality
+your test or analysis software.  It is free to produce any needed
+output files which may be in any desired format.
 
-The one variable that your software may want to make use of directly
-or indirectly is =LCATR_DEPENDENCY_PATH=.  This variable holds a
-":"-delimited list of directories that contain output from the prior
-jobs run on the same CCD (or RTM) that your software is running on.
-This path is the sole mechanism for dependent packages to find input
-files that were produced as output from prior jobs.  If you write your
-producer in Python you can use the following function to help search
-this path:
+The validator program has two responsibilities.  First, it should
+perform any validation on the output of the producer that the author
+sees fitting.  Second it must produce a =summary.lims= file that is in
+a schema-compliant format.  See the document "[[./schema.org][LCATR Schema]]" for
+details on producing this file.
+
+* Environment
+
+To define the environment your software must provide an Environment
+Module[fn:modules].  In this file all variables required
+by the harness to run your software must be defined.  These variables
+can be defined automatically by including this boilerplate:
+
+#+begin_src Tcl
+#%Module1.0 #-*-tcl-*-#
+source "$::env(LCATR_MODULES)/lcatr.tcl"
+lcatr_package PRODUCER VALIDATOR
+#+end_src
+
+Replace the strings =PRODUCER= and =VALIDATOR= with the names of your
+producer and validator executable files.  They should be specified as
+paths relative to the software's top-level installation directory
+(more on installation below).
+
+If your software requires additional environment variables they may be
+included in this file as well.  Keep in mind that any information
+about individual units of testing have no place here.
+
+Environment Modules are described at http://modules.sf.net/ and see
+the document "[[./modulefiles.org][LCATR Environment Modules]]" for details about writing
+them for your software.
+
+** Finding input files
+
+One special environment variable that your producer will need to use
+if it reads in files that were produced from other jobs that have been
+run on the same unit of test is the =LCATR_DEPENDENCY_PATH=.  This
+variable holds a ":"-delimited list of directories that contain output
+file from the prior jobs run on the same CCD (or RTM) that your
+software is testing.  This directory path list is the sole mechanism
+for dependent packages to find input files that were produced as
+output from prior jobs.  
+
+If you write your producer in Python the function =dependency_glob()=
+will help you search for a files matching a pattern in this path.
 
 #+BEGIN_SRC Python
-lcatr.harness.helpers.dependency_glob()
+from lcatr.harness.helpers import dependency_glob
+filenames = dependency_glob("somefile_*.data")
+for filename in filenames:
+  f = open(filenames[0])
+  data = f.read()
+  ...
 #+END_SRC
 
 
-** File system Locations
-
-The harness will run the producer and validator programs from a
-specific directory named after parameters such as your software's name
-and version, the unit type (CCD or RTM) and the unique unit and job
-identifiers.  This directory will be created, and possibly purged, by
-the harness.  Your software should only write file inside this
-directory.  The harness will copy all files written to it to the
-permanent archive.
-
-As described above, any required input files that are produced by runs
-of other jobs should only be found by checking directories listed in
-the =LCATR_DEPENDENCY_PATH=.
 
 
-* Repository
+* Tagged release
 
-All job software must be made available from a git repository.  The
-RACF maintains the definitive repositories for the software and
-provides access to them through the "/cgit/" service.  There is an area
-reserved for job software under =lcatr/jobs/=[fn:cgit].
+All production code must be specified by a tag in a git repository.
+This section gives brief commands on how to perform the required git
+mechanics.
 
-[fn:cgit] https://git.racf.bnl.gov/astro/cgit/lcatr/jobs/
+** Git repository setup
 
-When you are ready to make a release of your software the following
-git mechanics must be performed.
+Before getting starting a repository must be requested from the site
+git repository manager.  You should provide the canonical name for
+your software and you will be given a git URL.  If you do not yet have
+a local git repository you will clone the (empty) new one and fill it
+with your software files.  If you are already using git to manage your
+software you will add this new repository as a remote.  The following
+examples use an existing (non-empty) repository.
 
-** Starting a repository 
-
-Git is distributed.  What matters for LCATR is a git repository in
-/cgit/.  You will need to do an initial, one-time setup of this
-repository.
-
-The first step is to come up with a suitable name and request a
-repository from the /cgit/ repository administrator.  Once that is
-created you can then either "clone" it (if you do not yet have your
-own local git repository) or you can add it as a "remote" (if you do
-already have a local git repository).  In either case, the git URL to
-use is listed at the bottom of your /cgit/ repository's page under the
-heading "Clone".  Examples of these two procedures are shown using an
-example job used to test LCATR (see the document "[[./testing.org][LCATR Testing]]").
-
-*** Cloning
-
-Clone an example job's remote git repository:
+Clone a remote git repository:
 
 #+begin_example
 git clone https://git.racf.bnl.gov/astro/git/lcatr/jobs/example_station_A.git
 #+end_example
 
-*** Adding a remote
-
-Adding a remote repository to a local one:
+When done, the remote name defaults to "origin".  To add a remote
+repository to an already existing local one do:
 
 #+begin_example
 git remote add <remotename> https://git.racf.bnl.gov/astro/git/lcatr/jobs/example_station_A.git
 #+end_example
 
-
 ** Tagging a release
 
-Only tagged releases may be installed for official production running.
-To tag a release one runs the following from your git-controlled area
+To tag a release one runs the following from your local git-controlled area
 
 #+begin_example
 git tag <tagname> [<commit> | <object>]
@@ -160,24 +170,20 @@ strongly avoided but, strictly speaking, it will only cause a problem
 if done after the tag was used to install, select and run your
 software in a production setting.
 
+** Pushing a release
 
-** Pushing to cgit
-
-To make your release public you must next push commits and tags to
-RACF's cgit server.  There are several ways to push but to assure that
-the tag and what is tagged is pushed the simplest thing to do is run
-the command.
+So far you have only made changes to your local repository.  To send
+the commits associated with the tag you "push" them like:
 
 #+begin_example
 git push <remotename> <tagname>
 #+end_example
 
-
-* Advertising a release
+** Advertising a release
 
 After the git mechanics above are complete, the next step is to inform
-the software manager that a new release has been made.  This
-notification should include at least:
+the software manager that a new release has been made and requires
+installation.  This notification should include at least:
 
  - the tag name you chose to release
 
@@ -190,17 +196,37 @@ notification should include at least:
 It is expected that only the first item will change from release to
 release.
 
+
+
+
 * Installation
 
-All test software that will run on a host is installed to a central
-/install area/ location and is installed following the document
-[[./installation.org][LCATR Job Installation]].
+See above for advertising the existence of a new release.  
+
+** Installation Location
+
+The software manager will arrange for your software to be put in the
+"install area" for the host machines that require it.  Your software
+will be installed in a directory located via:
+
+#+begin_example
+<install area>/<name>/<tag>/
+#+end_example
+
+Where the =<name>= is the canonical name of your software and the
+=<tag>= is the reported git tag.
+
+** Mechanism
+
+The installation mechanism must be provided by you and you are free to
+use any reasonable approach.  The software manager will run your
+installation mechanism with the above directory as the installation
+root (a.k.a. the "prefix" in used by some installation mechanisms).
 
 
-* Testing the Harness
 
-Making your software run under the job harness requires several things
-to all be working correctly.  Ultimately it must work fully installed
-but during development adding an installation step to the run-debug
-loop is prohibitive.  Instructions on testing your software under the
-job harness are in the document "[[./testing.org][LCATR Testing]]".
+
+
+
+
+

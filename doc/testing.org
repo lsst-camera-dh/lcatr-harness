@@ -2,30 +2,49 @@
 #+SETUPFILE: setup.org
 
 This document describes how to test the LCATR job harness with some
-example jobs and how to set up your own software so that you can test
-it under the harness.
+provided example jobs.  With them you can see how to set up your own
+software for testing under the job harness.  Test and analysis
+software developers should also read "[[./developers.org][LCATR Job Developer
+Instructions]]".
 
 * Harness installation
 
 The document "[[./installation.org][LCATR Job Installation]]" covers how to install the job
-harness and the software implementing the jobs for a production
-setting.  These instructions can also be followed to set up a fake
-production environment.  
+harness and the software implementing the jobs for operating a
+production system.  However, developing test or analysis software in
+that setting will be encumbered by having to make frequent releases
+for each iteration of the development/test/debug cycle.
 
-A fully stand alone and ad-hoc installation can also be made as
-described here.  This involves checking out the code and building a
-view into these checkouts that make it appear as an official install
-area.  This is captured in the script =make-fakeinst.sh=[fn:mfi] in
-the =harness/tests/= area of the LCATR harness package.  Download and
-run it like:
+This note describes how one can set the job harness and your software
+in an ad-hoc system so that one can avoid the need for a formal
+release.  It is largely done by mimicking an official installation so
+that your source directory can appear to be in an installation area.
+It also describes how to use the "fakelims" server in place of
+communicating with the real LIMS server.
+
+To begin, the code for the job harness and the provided example jobs
+are downloaded and installed.  This is best done through a script
+which can be downloaded from:
+
+ - RACF :: https://git.racf.bnl.gov/astro/cgit/lcatr/harness.git/plain/tests/make-fakeinst.sh
+
+ - LSST Corp :: http://dev.lsstcorp.org/cgit/LSST/Camera/lcatr/harness.git/plain/tests/make-fakeinst.sh
+
+Run the script like:
 
 #+begin_example
-./make-fakeinst.sh <sourcedir> <installdir>
+./make-fakeinst.sh [<sourcedir> [<installdir> [url]]]
 #+end_example
 
+If an argument is not specified a sane one will be picked.  The two
+directories named need not exist.  They will be created and populated
+by the script.  The URL points to the base of a CGIT repository areas
+(not web area) that contains all the LCATR repositories and defaults
+to https://git.racf.bnl.gov/astro/cgit/lcatr.  It is expected that the
+you already have access the to the required repositories.
 
-[fn:mfi] https://git.racf.bnl.gov/astro/cgit/lcatr/harness.git/plain/tests/make-fakeinst.sh
-
+If the script finishes successfully you will have able to run the
+example jobs.
 
 * Example Jobs
 
@@ -33,7 +52,33 @@ There are three example jobs (also downloaded with the above script)
 that are meant to emulate (in an incredibly simple fashion) two
 stations "A" and "B" and an "analysis" of the output of station "A".
 They are each maintained in their own git repositories found at the
-same location[fn:cgitjobs] as all the real job software.
+same location as all the production test/analysis software
+repositories.
 
-[fn:cgitjobs]  https://git.racf.bnl.gov/astro/cgit/lcatr/jobs/
+Assuming the default (no) options were given to the =make-fakeinst.sh=
+script the example jobs can be run like:
+
+#+begin_example
+cd fakeinst
+./tests/testrunner test examples
+#+end_example
+
+This will start the "fakelims" server and run each jobs in turn.
+Several log files will be produced.  The =fakelims.log= shows some
+debugging about what the (fake) server sees and =lcatr_harness.org=
+shows logging from the individual job output as well as the harness
+itself.
+
+The local stage and "remote" archive can be found in /tmp/fake_lcatr
+and should hold the result files from the three jobs.  Depending on if
+purging is enabled the stage may be empty.
+
+* Running Your Job
+
+You can insert your own software into this example for development by
+"installing" it in to the =<installdir>= location that was produced by
+=make-fakeinst.sh=.  You can then write unit tests such as
+=harness/tests/test_examples.py= and run it as above or you can call
+the harness directly through the [FIXME: needs implementing!].
+
 
