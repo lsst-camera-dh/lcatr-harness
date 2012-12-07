@@ -1,0 +1,39 @@
+#+TITLE: LCATR Testing
+#+SETUPFILE: setup.org
+
+This document describes how to test the LCATR job harness with some
+example jobs and how to set up your own software so that you can test
+it under the harness.
+
+* Harness installation
+
+The document "[[./installation.org][LCATR Job Installation]]" covers how to install the job
+harness and the software implementing the jobs for a production
+setting.  These instructions can also be followed to set up a fake
+production environment.  
+
+A fully stand alone and ad-hoc installation can also be made as
+described here.  This involves checking out the code and building a
+view into these checkouts that make it appear as an official install
+area.  This is captured in the script =make-fakeinst.sh=[fn:mfi] in
+the =harness/tests/= area of the LCATR harness package.  Download and
+run it like:
+
+#+begin_example
+./make-fakeinst.sh <sourcedir> <installdir>
+#+end_example
+
+
+[fn:mfi] https://git.racf.bnl.gov/astro/cgit/lcatr/harness.git/plain/tests/make-fakeinst.sh
+
+
+* Example Jobs
+
+There are three example jobs (also downloaded with the above script)
+that are meant to emulate (in an incredibly simple fashion) two
+stations "A" and "B" and an "analysis" of the output of station "A".
+They are each maintained in their own git repositories found at the
+same location[fn:cgitjobs] as all the real job software.
+
+[fn:cgitjobs]  https://git.racf.bnl.gov/astro/cgit/lcatr/jobs/
+

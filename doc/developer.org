@@ -95,15 +95,112 @@ As described above, any required input files that are produced by runs
 of other jobs should only be found by checking directories listed in
 the =LCATR_DEPENDENCY_PATH=.
 
+
+* Repository
+
+All job software must be made available from a git repository.  The
+RACF maintains the definitive repositories for the software and
+provides access to them through the "/cgit/" service.  There is an area
+reserved for job software under =lcatr/jobs/=[fn:cgit].
+
+[fn:cgit] https://git.racf.bnl.gov/astro/cgit/lcatr/jobs/
+
+When you are ready to make a release of your software the following
+git mechanics must be performed.
+
+** Starting a repository 
+
+Git is distributed.  What matters for LCATR is a git repository in
+/cgit/.  You will need to do an initial, one-time setup of this
+repository.
+
+The first step is to come up with a suitable name and request a
+repository from the /cgit/ repository administrator.  Once that is
+created you can then either "clone" it (if you do not yet have your
+own local git repository) or you can add it as a "remote" (if you do
+already have a local git repository).  In either case, the git URL to
+use is listed at the bottom of your /cgit/ repository's page under the
+heading "Clone".  Examples of these two procedures are shown using an
+example job used to test LCATR (see the document "[[./testing.org][LCATR Testing]]").
+
+*** Cloning
+
+Clone an example job's remote git repository:
+
+#+begin_example
+git clone https://git.racf.bnl.gov/astro/git/lcatr/jobs/example_station_A.git
+#+end_example
+
+*** Adding a remote
+
+Adding a remote repository to a local one:
+
+#+begin_example
+git remote add <remotename> https://git.racf.bnl.gov/astro/git/lcatr/jobs/example_station_A.git
+#+end_example
+
+
+** Tagging a release
+
+Only tagged releases may be installed for official production running.
+To tag a release one runs the following from your git-controlled area
+
+#+begin_example
+git tag <tagname> [<commit> | <object>]
+#+end_example
+
+The form of the tag name is left to your discretion but it is
+recommended that some convention is chosen and carefully followed.  By
+default this will tag the current "head" commit.  If another commit is
+desired its hash may be specified.  Running =gitk= can help identify
+the commit.
+
+Git allows for changing a tag after it has been made.  This should be
+strongly avoided but, strictly speaking, it will only cause a problem
+if done after the tag was used to install, select and run your
+software in a production setting.
+
+
+** Pushing to cgit
+
+To make your release public you must next push commits and tags to
+RACF's cgit server.  There are several ways to push but to assure that
+the tag and what is tagged is pushed the simplest thing to do is run
+the command.
+
+#+begin_example
+git push <remotename> <tagname>
+#+end_example
+
+
+* Advertising a release
+
+After the git mechanics above are complete, the next step is to inform
+the software manager that a new release has been made.  This
+notification should include at least:
+
+ - the tag name you chose to release
+
+ - the remote (cgit) repository URL
+
+ - on which machines the software needs installing
+
+ - installation and validation instructions
+
+It is expected that only the first item will change from release to
+release.
+
 * Installation
 
 All test software that will run on a host is installed to a central
-/install area/ location and is installed following the document [[./installation.org][LCATR
-Job Installation]].
+/install area/ location and is installed following the document
+[[./installation.org][LCATR Job Installation]].
+
 
 * Testing the Harness
 
 Making your software run under the job harness requires several things
 to all be working correctly.  Ultimately it must work fully installed
 but during development adding an installation step to the run-debug
-loop is prohibitive.  FIXME: implement and document test mode.
+loop is prohibitive.  Instructions on testing your software under the
+job harness are in the document "[[./testing.org][LCATR Testing]]".

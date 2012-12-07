@@ -21,18 +21,22 @@ LCATR has some diverse responsibilities both in terms of what it
 provides and what test and analysis authors must supply.  These are
 documented in the following:
 
- - [[./design.org][Design for LSST CCD/RTM Test Software System]] :: an overall picture of how the system works.
+ - [[./design.org][design]] :: an overall picture of how the system works.
 
- - [[./developer.org][LCATR Job Developer Instructions]] :: what an author of an LCATR job needs to know.
+ - [[./developer.org][developer]] :: what an author of an LCATR job needs to know.
 
- - [[./installation.org][LCATR Job Installation]] :: how software for an LCATR job should be installed.
+ - [[./installation.org][installation]] :: how software for an LCATR job should be installed.
 
- - [[./lims-harness-api.org][The LIMS and Job Harness API]] :: agreement on communication between LIMS and LCATR.
+ - [[./lims-harness-api.org][LIMS/harness API]] :: agreement on communication between LIMS and LCATR.
 
- - [[./modulefiles.org][Describing LSST Sensor Test Software Environment with Modules]] :: how test/analysis software sets up its run-time environment.
+ - [[./modulefiles.org][environment modules]] :: how test/analysis software sets up its run-time environment.
 
- - [[./schema.org][LCATR Schema]] :: required format for writing data into the LIMS database from an LCATR job.
+ - [[./schema.org][schema]] :: required format for writing data into the LIMS database from an LCATR job.
 
- - [[./jobharness.org][LSST CCD Test Job Harness]] :: details on the /job harness/ 
+ - [[./testing.org][testing]] :: how to test LCATR or test/analysis software under LCATR
 
- - [[./dirhier.org][Global organization of results and source files for LSST CCD testing]] :: details of organization of result files.
+ - [[./roles.org][roles]] :: some roles for individuals participating in LCATR
+
+ - [[./jobharness.org][job harness details]] :: details on the /job harness/ 
+
+ - [[./dirhier.org][file system layout]] :: details of organization of result files.
