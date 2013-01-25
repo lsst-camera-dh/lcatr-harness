@@ -40,3 +40,5 @@ documented in the following:
  - [[./jobharness.org][job harness details]] :: details on the /job harness/ 
 
  - [[./dirhier.org][file system layout]] :: details of organization of result files.
+
+ - [[./todo.org][todo items]] :: attempt to keep track of where we are and where we are going

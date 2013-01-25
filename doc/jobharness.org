@@ -95,13 +95,13 @@ the environment from which the harness is invoked (FIXME: should we
 limit this?) to which variables are added to expose the input
 parameters:
 
- - =CCDTEST_UNIT= :: the type of unit being tested
+ - =LCATR_UNIT= :: the type of unit being tested
 
- - =CCDTEST_UID= :: the unique identifier of the unit
+ - =LCATR_UNIT_ID= :: the unique identifier of the unit
 
- - =CCDTEST_NAME= :: the canonical name of the test
+ - =LCATR_NAME= :: the canonical name of the test
 
- - =CCDTEST_VERSION= :: the version string for the job's software
+ - =LCATR_VERSION= :: the version string for the job's software
 
 ** Static Job Environment
 
@@ -146,35 +146,35 @@ provide the input to the current job.
 Based on the allocated job ID and any input dependencies the job
 environment is updated to include variables of the form:
 
- - =CCDTEST_OUTDIR= :: the directory (relative path rooted on either
+ - =LCATR_OUTDIR= :: the directory (relative path rooted on either
       the local stage or the archive) from which the job will run and
       which will contain any and all output files.
 
- - =CCDTEST_<dep>_OUTDIR= :: the directory (relative path rooted on
+ - =LCATR_<dep>_OUTDIR= :: the directory (relative path rooted on
       either the local stage or the archive) to find any files
       produced by prior jobs on which the current job depends.  There
       is on variable for each prior job named =<dep>=.
 
 ** Staging and File System Checking
 
-The local stage file system is checked to assure that =CCDTEST_OUTDIR=
+The local stage file system is checked to assure that =LCATR_OUTDIR=
 does not exist.  The archive is checked for the existence of all
-=CCDTEST_<dep>_OUTDIR= directories.  If these checks fail the harness
+=LCATR_<dep>_OUTDIR= directories.  If these checks fail the harness
 aborts.
 
-The =CCDTEST_<dep>_OUTDIR= directories are copied from the archive to
-a corresponding location on the local stage and the =CCDTEST_OUTDIR=
+The =LCATR_<dep>_OUTDIR= directories are copied from the archive to
+a corresponding location on the local stage and the =LCATR_OUTDIR=
 directory is created and becomes the harness's current working directory.
 
 ** Production Step of the Job
 
-The production program, as specified by the =CCDTEST_JOB_PRODUCER=
+The production program, as specified by the =LCATR_JOB_PRODUCER=
 environment variable, is executed.  Standard output and error are
 logged.  If the returns a failure code (non-zero) the harness aborts.
 
 ** Validation Step of the Job
 
-The validation program, as specified by the =CCDTEST_JOB_VALIDTOR=
+The validation program, as specified by the =LCATR_JOB_VALIDTOR=
 environment variable, is executed.  The validator is expected to
 perform the following tasks:
 
@@ -192,7 +192,7 @@ Standard output and error are logged.  If the returns a failure code
 
 ** Archiving
 
-The contents of the current directory are copied into =CCDTEST_OUTDIR=
+The contents of the current directory are copied into =LCATR_OUTDIR=
 rooted at the archive.
 
 ** Termination

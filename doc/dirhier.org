@@ -24,7 +24,7 @@ The test software must place all of its output files under the
 directory defined by the environment variable:
 
 #+begin_src sh
-$CCDTEST_OUTPUT_DIR
+$LCATR_OUTPUT_DIR
 #+end_src
 
 A job will be started inside this directory and it must not produce
@@ -41,7 +41,7 @@ specified external to the job and are communicated to the job through
 environment variables of the form:
 
 #+begin_src sh
-$CCDTEST_<NAME>_DIR
+$LCATR_<NAME>_DIR
 #+end_src
 
 Where =<NAME>= is replaced by the (capitalized) canonical name of the
@@ -56,11 +56,11 @@ Test software is installed by the software manager given a git commit
 identifier (tag or SHA1 hash) by the software developer.  The
 installation is described by the environment variables:
 
- - =$CCDTEST_<NAME>_HOME= :: locates the installation directory of the software.
+ - =$LCATR_<NAME>_HOME= :: locates the installation directory of the software.
 
- - =$CCDTEST_<NAME>_VERSION= :: the git tag of the software release
+ - =$LCATR_<NAME>_VERSION= :: the git tag of the software release
 
- - =$CCDTEST_<NAME>_GIT_HASH= :: the git SHA1 hash of the software release
+ - =$LCATR_<NAME>_GIT_HASH= :: the git SHA1 hash of the software release
 
 In addition variables like =$PATH= will be suitably modified.
 See [[./modulesfiles.org]] for how the environment is to be defined.
@@ -70,13 +70,13 @@ See [[./modulesfiles.org]] for how the environment is to be defined.
 
 Some standard environment variables are defined on a per-job basis:
 
- - =$CCDTEST_JOB_ID= :: a job identifier unique to the site
+ - =$LCATR_JOB_ID= :: a job identifier unique to the site
 
- - =$CCDTEST_CCD_ID= :: an identifier for the CCD being tested.
+ - =$LCATR_CCD_ID= :: an identifier for the CCD being tested.
 
- - =$CCDTEST_NAME= :: the canonical name of the test.
+ - =$LCATR_NAME= :: the canonical name of the test.
 
- - =$CCDTEST_STAMP= :: the time stamp for which the test results will
+ - =$LCATR_STAMP= :: the time stamp for which the test results will
       be recorded.
 
 ** Special environment
@@ -114,7 +114,7 @@ here.  The test software must not make reference to file system paths
 outside this root.  This root is defined by the environment variable:
 
 #+begin_src sh
-$CCDTEST_ROOT
+$LCATR_ROOT
 #+end_src
 
 While this variable is exposed to the jobs the test software should
@@ -123,7 +123,7 @@ rely on specific variables (described below) to locate files.
 ** Output Directory
 
 The path to a location containing result files (ie,
-=$CCDTEST_OUTPUT_DIR= or =$CCDTEST_<NAME>_DIR=) is constructed from
+=$LCATR_OUTPUT_DIR= or =$LCATR_<NAME>_DIR=) is constructed from
 sub-directories named, in order, by these elements:
 
  1. =<CCD_ID>= the identifier for the CCD tested.
@@ -137,7 +137,7 @@ sub-directories named, in order, by these elements:
 A general output path would then be:
 
 #+begin_src sh
-CCDTEST_<NAME>_DIR=$CCDTEST_ROOT/<CCD_ID>/<NAME>/<VERSION>/<JOB_ID>/
+LCATR_<NAME>_DIR=$LCATR_ROOT/<CCD_ID>/<NAME>/<VERSION>/<JOB_ID>/
 #+end_src
 
 It is noted that the values ofr these individual elements are exposed
@@ -162,7 +162,7 @@ structure below it must be identical between sites and as described
 here.  This root is defined by the environment variable:
 
 #+begin_src sh
-$CCDTEST_ROOT
+$LCATR_ROOT
 #+end_src
 
 While this variable is exposed to the jobs the test software should
@@ -174,7 +174,7 @@ The test software must place all output files under the directory
 defined by the environment variable:
 
 #+begin_src sh
-$CCDTEST_OUTPUT_DIR
+$LCATR_OUTPUT_DIR
 #+end_src
 
 A job should not produce any files outside of this directory.
@@ -187,7 +187,7 @@ external to the job and are communicated to the job through
 environment variables of the form:
 
 #+begin_src sh
-$CCDTEST_<NAME>_DIR
+$LCATR_<NAME>_DIR
 #+end_src
 
 Where =<NAME>= is replaced by the canonical name of the test software
@@ -197,11 +197,11 @@ that produced it.
 
 The test software jobs should not assume any understanding of the
 details of the file system organization except the
-=$CCDTEST_OUTPUT_DIR= and =$CCDTEST_<NAME>_DIR= variables described
+=$LCATR_OUTPUT_DIR= and =$LCATR_<NAME>_DIR= variables described
 above.  That said, the file system is organized to allow for
 convenient browsing and self documenting discovery of its contents.
 
-The path to an output directory under =$CCDTEST_ROOT= is constructed
+The path to an output directory under =$LCATR_ROOT= is constructed
 from these elements:
 
  - =<CCD_ID>= :: the identifier for the CCD tested.
@@ -223,12 +223,12 @@ coordinate on this issue.
 
 The test software can rely on the following environment variables:
 
- - =$CCDTEST_<NAME>_HOME= :: the directory where the software has been installed.
+ - =$LCATR_<NAME>_HOME= :: the directory where the software has been installed.
 
- - =$CCDTEST_<NAME>_VERSION= :: the human readable version string
+ - =$LCATR_<NAME>_VERSION= :: the human readable version string
       (same as the =git= commit tag)
 
- - =$CCDTEST_<NAME>_GIT_HASH= :: the =git= commit SHA1 hash
+ - =$LCATR_<NAME>_GIT_HASH= :: the =git= commit SHA1 hash
 
 ** Specific Environment
 

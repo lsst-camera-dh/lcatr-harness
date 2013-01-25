@@ -41,7 +41,7 @@ class Job(object):
         'unit_type',    # type of unit (eg, CCD/RTM)
         'unit_id',      # The unique unit identifier
         'install_area', # base to where software is installed
-        'modules',      # where the job harnessed modulefiles can be found
+        #'modules',      # where the job harnessed modulefiles can be found
         ]
 
 

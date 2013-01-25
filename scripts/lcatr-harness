@@ -1,0 +1,9 @@
+#!/usr/bin/env python
+'''
+The LCATR job harness.
+'''
+
+import sys
+from lcatr.harness import main
+main.cmdline(sys.argv[1:])
+

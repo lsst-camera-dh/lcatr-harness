@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 '''
 User interface to the job harness.
-
 '''
 
 import argparse
@@ -37,8 +36,6 @@ def cmdline(args):
     job = jobmod.Job(cfg)
     job.run(steps)
 
+
 if '__main__' == __name__:
-    import sys
     job = cmdline(sys.argv[1:])
-
-

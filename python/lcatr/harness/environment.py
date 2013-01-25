@@ -198,7 +198,8 @@ class Modules(object):
         modpath = resolve_modulepath(home, env = self.env, modpath = modpath)
 
         # insert lcatr job expectations
-        modpath = [self.install_area, self.modules] + modpath
+        #modpath = [self.install_area, self.modules] + modpath
+        modpath = [self.install_area] + modpath
 
         self.env['MODULEPATH'] = ':'.join(modpath)
 

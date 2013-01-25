@@ -42,71 +42,47 @@ version and produce a /modulefile/ for this installation.
 
 * Layout of /modulefiles/
 
-A single repository of /modulefiles/ is maintained (in Git) and shared
-by all sites.  The /modulefiles/ for every released version of all
-software packages are organized in a directory tree.  For each test
-software package there is a directory of the same name which contains
-a /modulefile/ for each released version.  The version string used for
-the /modulefile/ name must match the string used to produce the Git
-tag of the released software.  This means that a new /modulefile/ is
-always created when a new version of the test software is released,
-even if this new file may contain no appreciable differences from the
-prior one.
-
-Different versions of the /modulefiles/ themselves are tracked in Git
-but in a trivial manner.  In general the most recent version available
-should always be used.  The /modulefiles/ should be kept in a Git
-controlled area as the Git commit hash will be recorded.
-
+A /modulefile/ may live either in the central =lcatr/modulefiles=
+repository maintained in git or be installed along with the software
+in host-central installation area.  In both cases it is located and
+identified based on fact that it lives in a =name/version/=
+sub-directory.
 
 * Boilerplate /modulefile/ commands
 
-Every /modulefile/ must register itself by calling the function:
+Every /modulefile/ must register job harness entries into its code.
+The simplest /modulefile/ looks like:
 
 #+begin_src tcl
-lcatr_package <HASH> [dep1 dep2 ...]
+#%Module1.0 #-*-tcl-*-#
+source "$::env(LCATR_MODULES)/lcatr.tcl"
+lcatr_package <producer> <validator>
 #+end_src
 
-The first argument, =<HASH>=, is the Git commit SHA1 hash
-corresponding to the Git tag used to make the release (and name the
-/modulefile/).  
+The =<producer>= and =<validator>= arguments give the path to the
+producer and validator executable programs, respectively.  If relative
+the path is assumed to be with respect to the top of the package's
+installation directory.
 
-Any additional arguments are interpreted to be other packages under
-control of these /modulefiles/ which this /modulefile/ depends on.
-They should be specified with the form "=Name/Version=".  
-
-The =lcatr_package= function is defined in a =util.tcl= file which can
-be located and sourced by the /modulefile/ with these lines:
-
-#+begin_src tcl
-set base [file dirname [file dirname $ModulesCurrentModulefile]]
-source $base/util.tcl
-
-lcatr_package ...
-#+end_src
-
-After calling the =lcatr_package= all dependent packages are loaded
-(via a =module load= call) and a set of standard environment variables
-are defined by this package.  
+Any additional, static job-specific environment may also be defined in
+the /modulefile/.
 
 * Environment determined by =lcatr_package=
 
 The call to the =lcatr_package= function will produce these
 environment variables. 
 
- - =CCDTEST_NAME= :: the name of the package, taken from the directory
-   part of the /modulefile/.
+ - =LCATR_NAME= :: the canonical name of the package.
 
- - =CCDTEST_VERSION= :: the version of the package, taken from the name
-   of the /modulefile/
+ - =LCATR_VERSION= :: the version of the package.
 
-- =CCDTEST_LACTR_PKGS= :: a colon-separated, ordered list of
-     =<pkg>/<ver>= pairs this and any other calls to =lcatr_packages=.
+ - =LCATR_LACTR_PKGS= :: a colon-separated, ordered list of package names currently set up.
 
-- =CCDTEST_GIT_HASH= :: the hash passed to =lcatr_package=
+ - =LCATR_SCHEMA_PATH= :: a colon-separated, ordered list of package installation directories used to look for =.schema= files.  (see [[./schema.org]])
 
-- =CCDTEST_MODULEFILES_HASH= :: the Git commit hash that has been
-     checked out and providing the /modulefile/ being loaded.
+ - =LCATR_PRODUCER= :: the absolute path to the producer program
+
+ - =LCATR_VALIDATOR= :: the absolute path to the validator program
 
 
 * Environment determined by the job harness
@@ -117,20 +93,17 @@ configuration it is given and based on the results of loading the
 context of the /modulefiles/.  The provided variables are described in
 this section.
 
- - =CCDTEST_SITE= :: the canonical name for the site context in which
-                     the job is running.
+ - =LCATR_UNIT= :: the unit of testing ("CCD", "RTM")
 
- - =CCDTEST_UNIT= :: the unit of testing ("CCD", "RTM")
+ - =LCATR_JOB_ID= :: the unique identifier of the running job.
 
- - =CCDTEST_JOB_ID= :: the unique identifier of the running job.
-
- - =CCDTEST_UNIT_ID= :: the unique identifier of the unit (eg CCD)
+ - =LCATR_UNIT_ID= :: the unique identifier of the unit (eg CCD)
       being tested.
 
- - =CCDTEST_OUTDIR= :: the directory from which the job will run and
+ - =LCATR_OUTDIR= :: the directory from which the job will run and
    deposit its output files.
 
- - =CCDTEST_<dep>_OUTDIR= :: the directory where output files from the
+ - =LCATR_<dep>_OUTDIR= :: the directory where output files from the
    prior running of a the dependency =<dep>= were placed.  Such a
    variable is also produced for the /modulefile/ being processed.
  

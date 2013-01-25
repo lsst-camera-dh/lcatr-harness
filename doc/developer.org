@@ -33,6 +33,36 @@ The instructions for each step are described in detail in the rest of
 this document.  In addition, for information about testing your
 software under the job harness see the document "[[./testing.org][LCATR Testing]]".
 
+** Scope considerations
+
+The scope of a harnessed job is a balance between being as inclusive
+as possible to avoid a proliferation of jobs (and their developer
+overheard) and being as atomic as possible so that one problem does
+lead to an abort an loss of progress.  It's up to the developer to
+determine this.  Some guidelines:
+
+ - A job is considered successful for failed; there is no middle
+   ground.  If it is to be re-run it must start from the beginning.
+
+ - Success should be judged on the job finishing the processing with
+   no fatal errors and not on the actual results (eg, a busted CCD can
+   still be successfully tested).
+
+ - The job must finish completely and successfully before its summary
+   results are uploaded to LIMS.
+
+ - Mechanisms for chaining separate but related jobs are possible.
+
+** Naming
+
+The harness identifies a job by its /canonical name/ (and its
+installed /version/).  Once a name is selected it becomes a reserved
+identifier in various parts of the system.  Since it is a primary
+descriptor it is best for the named test to not evolve far beyond its
+original intention.  If a radical change is needed then a new
+canonical name should be chosen.  
+
+
 * Develop your software
 
 Your software may be written in a variety of ways but some general
@@ -76,6 +106,8 @@ To define the environment your software must provide an Environment
 Module[fn:modules].  In this file all variables required
 by the harness to run your software must be defined.  These variables
 can be defined automatically by including this boilerplate:
+
+[fn:modules] http://modules.sf.net/
 
 #+begin_src Tcl
 #%Module1.0 #-*-tcl-*-#
@@ -199,9 +231,16 @@ release.
 
 
 
+* Dependencies
+
+As described above, your job finds input files that were output by any
+jobs on which your job depends based on information that the harness
+provides.  The harness gets this information from the LIMS database
+but it must ultimately come from the test software developer.  You
+need to communicate this to LIMS.
+
 * Installation
 
-See above for advertising the existence of a new release.  
 
 ** Installation Location
 
@@ -222,11 +261,4 @@ The installation mechanism must be provided by you and you are free to
 use any reasonable approach.  The software manager will run your
 installation mechanism with the above directory as the installation
 root (a.k.a. the "prefix" in used by some installation mechanisms).
-
-
-
-
-
-
-
 
