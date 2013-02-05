@@ -72,6 +72,7 @@ class Config(object):
         'operator',   # guessed based on USER env var
         'stamp',      # taken as current time
         'stage_root', # taken as current working directory
+        'install_area',         # taken as VIRTUAL_ENV/share
 
         'modules_home',         # guessed 
         'modules_version',      # by the
@@ -107,7 +108,7 @@ class Config(object):
             continue
         #print 'Trying files:',' '.join(files)
         used = scp.read(files)
-        print 'Loaded files:',' '.join(used)
+        print 'Loaded configuration files:',' '.join(used)
         #dump_dict('Defaults:',scp.defaults())
         cfg.update(scp.defaults())
         #dump_dict('After cfgfile',cfg)
@@ -174,6 +175,10 @@ class Config(object):
         self.stage_root = os.getcwd()
         return self.stage_root
 
+    def guess_install_area(self):
+        if hasattr(self,'install_area'): return self.install_area
+        self.install_area = os.environ.get('VIRTUAL_ENV','')
+        return self.install_area
 
     def guess_modules_home(self):
         if hasattr(self,'modules_home'): return self.modules_home

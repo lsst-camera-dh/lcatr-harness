@@ -211,12 +211,20 @@ class Modules(object):
 
         A RuntimeError is raised if there is a processing error
         '''
+        out,err,status = self.command_outerr(flavor,*args)
+
+        log.info('OUT:\nVVV\n%s\n^^^' % out)
+        log.info('ERR:\nVVV\n%s\n^^^' % err)
+
+        return out
+
+    def command_outerr(self, flavor, *args):
         if type(args[0]) == type([]):
             args = args[0]
         else:
             args = list(args)
         cmd = [self.cmdstr, flavor] + args
-        # FIXME: this should be properly logged, not printed.
+
         msg = 'Running command: "%s", MODULEPATH="%s"' % \
             (' '.join(cmd), self.env['MODULEPATH'])
         log.info(msg)
@@ -226,9 +234,7 @@ class Modules(object):
                                 stdout = subprocess.PIPE,
                                 stderr = subprocess.PIPE,
                                 env = self.env)
-        out,err = proc.communicate()
-        log.info('OUT:\nVVV\n%s\n^^^' % out)
-        log.info('ERR:\nVVV\n%s\n^^^' % err)
+        out, err = proc.communicate()
         status = proc.poll()
 
         # Check also for 'ERROR' because modulecmd lets errors sneak
@@ -237,7 +243,8 @@ class Modules(object):
             msg = '%s\ncmd: "%s" with path: %s' % \
                 (err,' '.join(cmd), self.env['MODULEPATH'])
             raise RuntimeError,msg
-        return out
+
+        return out,err,status
 
     def do_cmd(self, cmd, mod_name, *args):
         '''
@@ -270,6 +277,10 @@ class Modules(object):
             continue
         return
     
+    def do_avail(self, *args):
+        return self.command_outerr('sh', 'avail', *args)[1]
+        
+
     def __getattr__(self, cmd):
         '''
         If a environment modules command is requested, return a
@@ -279,6 +290,9 @@ class Modules(object):
         '''
         if cmd in ['load','add','unload','rm']: 
             return lambda name, *args: self.do_cmd(cmd, name, *args)
+        if cmd in ['avail']:
+            return lambda *args: self.do_avail(*args)
+
         var = cmd
         for maybe in [var, var.upper(), 'lcatr_'+var, 'LCATR_'+var.upper()]:
             if self.env.has_key(maybe):
@@ -296,3 +310,15 @@ class Modules(object):
 
     pass
 
+def cfg2em(cfg):
+
+    env = dict(os.environ)  # calling environment
+    pars = cfg.__dict__.iteritems()
+    newenv = {'%s%s'%(cfg.envvar_prefix,k.upper()):v for k,v in pars}
+    env.update(newenv)
+
+    em = Modules(env)
+    em.setup(cfg.modules_home, cfg.modules_cmd, 
+             cfg.modules_version, cfg.modules_path)
+
+    return em

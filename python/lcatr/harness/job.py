@@ -108,16 +108,9 @@ class Job(object):
         method to execute external programs. 
         '''
         
-        env = dict(os.environ)  # calling environment
-        pars = self.cfg.__dict__.iteritems()
-        newenv = {'%s%s'%(self.cfg.envvar_prefix,k.upper()):v for k,v in pars}
-        env.update(newenv)
+        em = environment.cfg2em(self.cfg)
 
-        em = environment.Modules(env)
-        em.setup(self.cfg.modules_home, self.cfg.modules_cmd, 
-                 self.cfg.modules_version, self.cfg.modules_path)
         modfile = os.path.join(self.cfg.job, self.cfg.version)
-
         try:
             em.load(modfile)
         except RuntimeError, msg:
@@ -126,7 +119,7 @@ class Job(object):
                 if k.startswith(self.cfg.envvar_prefix):
                     print '%s = %s' % (k,v)
             raise
-        self.em = em
+
 
         # This needs to be imported so our own attempts at validating
         # the result summary data can find potential schema files.

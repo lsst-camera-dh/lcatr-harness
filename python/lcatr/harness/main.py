@@ -6,9 +6,10 @@ User interface to the job harness.
 import sys
 import argparse
 from lcatr.harness import config
+from lcatr.harness import environment
 from lcatr.harness import job as jobmod
 
-non_job_steps = ['help','dump']
+non_job_steps = ['help','dump','joblist']
 
 def do_help(cfg):
     print 'usage: lcatr_harness [options] [steps]'
@@ -18,6 +19,12 @@ def do_dump(cfg):
     print 'Configuration:'
     for k,v in sorted(cfg.__dict__.items()):
         print '%s: %s' % (k,v)
+    sys.exit(1)
+
+def do_joblist(cfg):
+    print 'Print known jobs'
+    em = environment.cfg2em(cfg)
+    print em.avail("")
     sys.exit(1)
 
 def cmdline(args):
