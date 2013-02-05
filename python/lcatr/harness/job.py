@@ -34,8 +34,8 @@ class Job(object):
         'operator',   # User name of person operating/running the test
         'host',       # Name of host running this job
         'stamp',      # A time_t seconds stamping when job ran
-        'stage_root', # The CCDTEST_ROOT on local machine
-        'archive_root', # The CCDTEST_ROOT base of the archive
+        'stage_root', # The LCATR_ROOT on local machine
+        'archive_root', # The LCATR_ROOT base of the archive
         'archive_host', # The name of the machine hosting the archive
         'archive_user', # Login name of user that can write to archive
         'unit_type',    # type of unit (eg, CCD/RTM)

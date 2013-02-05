@@ -2,26 +2,44 @@
 #+SETUPFILE: setup.org
 
 This note describes how to install the LSST CCD acceptance testing Job
-Harness (JH) and the job software it runs.
+Harness (JH) and the job software it runs.  It selects specific
+conventions to be followed.  And it describes how to run your software
+under the job harness in a development context.
+
+* Overview
+
+The Job Harness software itself is installed in a =virtualenv=[fn:venv]
+environment which is made available to any machine that is hosting
+test or analysis software.  This environment is Python-oriented but
+provides a rooted directory tree that mimics the usual system-level
+one.  
+
+All software specific to running tests or analyses must be installed
+into this tree in some reasonable manner but must install an
+Environment Module /modulefile/ in to one of a few specific locations
+as described below.
+
+[fn:venv] http://www.virtualenv.org
 
 * Installation of Job Harness and Related Code
 
-The job harness and related code is released as Python source
-packages.  They are best installed in a =virtualenv= virtual
-environment[fn:venv] by =pip= or =easy_install=.
+This section describes how to create the virtual environment, activate
+it and install in to it the Job Harness software.
 
 ** Setting up a Python Virtual Environment
 
-Install =virtualenv=, make a virtual environment root area and
-activate it:
+Use =virtualenv= to a virtual environment root area and activate it:
 
 #+begin_src sh
 virtualenv /path/to/lcatr/venv
 source /path/to/lcatr/venv/bin/activate
 #+end_src
 
-At this point the environment variable =$VIRTUAL_ENV= points to this
-installation location.  
+This activation step must be done in future fresh shells in order to
+run the job harness or install specific job software.  Among other
+things it defines an environment variable =$VIRTUAL_ENV= which points
+to the root of the environment (=/path/to/lcatr/venv= in the example).
+It may be later referenced by job software installation mechanisms.
 
 ** Configuring the Python repository
 
@@ -49,14 +67,14 @@ the file =~/.pydistutils.cfg=:
 index_url = http://lycastus.phy.bnl.gov/pypi/
 #+end_example
 
-[fn:pypicaveat] This is a temporary location and internal to BNL.
+[fn:pypicaveat] FIXME: this is a temporary location and internal to BNL.
 
 ** Installing Job Harness and Support Code
 
 After activating the virtual environment as above issue:
 
 #+begin_example
-pip install lcatr lcatr-schema lcatr-harness
+pip install lcatr lcatr-schema lcatr-harness lcatr-modulefiles
 #+end_example
 
 or similar if you elect to use =easy_install=.
@@ -82,148 +100,46 @@ This section is for Job Harness developers.  To prepare a release:
 
 * Test Station and Analysis Software Installation Requirements
 
-Each version of the job software itself should be installed in a
-central "install area" under:
+Ultimately, test station and analysis software must be installed into
+the virtual environment area such that it is callable after an
+Environment Modules /modulefile/ is located by name and version and
+loaded.  The installation must allow for the software to be uniquely
+specified by the /modulefile/.
 
-#+BEGIN_EXAMPLE
-$LCATR_INSTALL_AREA/<jobname>/<jobversion>/
-#+END_EXAMPLE
+** Locations for /modulefiles/
 
-The =<jobname>= is the canonical name for the software and the
-=<jobversion>= string must match that of a GIT tag which marks the
-version of the software that is installed.  It is up to the software
-installation manager to assure this correspondence.
-
-The value of =LCATR_INSTALL_AREA= is specific to the hosting computer
-and may be specified through the usual job harness configuration
-mechanism or in the calling environment.
-
-** Environment Management
-
-The job harness enforces consistent environment management of the
-various software packages through the use of the Environment Modules
-Project[fn:web] and its /modulefiles/.  These files define the
-environment variables required by the harness as well as any
-additional environment needed by a particular package.  There is a
-/modulefile/ corresponding to the name and version of each installed
-instance of the software.  Some conventions are followed to make
-writing a /modulefile/ simple.
-
-[fn:web] http://modules.sf.net/
-
-*** Conventions for writing a /modulefile/
-
-The environment requirements placed on the software by the job harness
-can be satisfied by properly calling the function =lcatr_package=
-which is defined in the =lcatr.tcl= library provided by the
-/modulefile/ package.  The minimum module file is thus:
-
-#+BEGIN_SRC Tcl
-source $::env(LCATR_MODULES)/lcatr.tcl
-lcatr_package <producer> <validator>
-#+END_SRC
-
-The =<producer>= and =<validator>= arguments are taken to be paths
-relative to =$LCATR_INSTALL_AREA/<jobname>/<jobversion>/= and pointing
-to the /producer/ and /validator/ main programs, respectively.
-
-
-*** Locating a /modulefile/
-
-The /modulefile/ may in general be located as supported by the
-Environment Module Project system.  Ultimately the locations checked
-are governed by the value of the =MODULEPATH= environment variable.
-Two locations in particular are suggested for LCATR packages.
-
-A central git repository[fn:mfgit] of /modulefiles/ is maintained.  This
-repository is populated with directories and files named like
-=<jobname>/<jobversion>=.  For packages that have their /modulefiles/
-kept in this repository a new /modulefile/ must be added for each
-release of the software.  It is this repository area that is pointed
-to by the =LCATR_MODULES= environment variable used above.
-
-It is common for /modulefiles/ to be unchanged between different
-releases of the software and so it can become burdensome to make new
-ones for each release.  To rectify this a /modulefile/ can be
-maintained directly in the software source repository and be installed
-along with the package to the installation area.  In this case the
-/modulefile/ must exist at top-level in the package directory and be
-called =.modulerc=
- 
-
-In summary, every installed instance of the software must have a
-/modulefile/ in at least one of two places:
+There are two locations to install /modulefiles/.  The first is a
+central collection of /modulefiles/:
 
 #+begin_example
-$LCATR_INSTALL_AREA/<jobname>/<jobversion>/.modulerc
-$LCATR_MODULES/<jobname>/<jobversion>
+$VIRTUAL_ENV/modulefiles/<Name>/<Version>
 #+end_example
 
-By default the =MODULEPATH= variable is set to first check the install
-area before the central /modulefiles/ repository.
+The leaf =<Version>= is the /modulefile/.  The =modulefiles/=
+directory is initially populated by installation of the
+=lcatr-modulefiles= package as described above.  Job installation
+mechanisms may place files into this area at their installation time
+but are instead encouraged to commit their /modulefiles/ to the
+=lcatr/modulefiles.git= repository.
 
-[fn:mfgit] https://git.racf.bnl.gov/astro/cgit/lcatr/modulefiles.git/
+The second location is in a package and version specific directory:
 
-** Installation Methods
+#+begin_example
+$VIRTUAL_ENV/share/<Name>/<Version>/modulefile
+#+end_example
 
-This section gives some suggested installation methods.
+Here the leaf =modulefile= is the /modulefile/ for the installed
+package of the given =<Name>= and =<Version>=.  The software itself
+may be installed in this same directory.  This second location is
+convenient if the job software exists in a ready-to-use form in a
+cloned git repository.  If so, the entire installation procedure may
+be as simple as:
 
-*** Simple Packages
+#+begin_example
+cd /path/to/package/clone/
+git archive --prefix=$pkg/$tag/ --format=tar $tag | (cd $VIRTUAL_ENV/share/; tar -xf -)
+#+end_example
 
-Packages that that do not require any particular installation other
-than unpacking can be prepared by producing a tar file directly from
-their git repository and based on the git tag.  First produce the tar
-file:
-
-#+begin_src sh
-git archive -o <jobname>-<jobversion>.tgz --format=tgz --prefix=<jobname>/<jobversion>/ <jobversion>
-#+end_src
-
-Then, install it via:
-
-#+begin_src sh
-cd $LCATR_INSTALL_AREA
-tar -xzvf /path/to/<jobname>-<jobversion>.tgz
-#+end_src
-
-See above for issues involved in writing the /modulefile/.
-
-*** Python =distutils= packages
-
-t.b.d.
-
-
-* High Level Configuration
-
-Some items need to be set up that are outside the scope of the job
-harness.
-
-** Indicating location of installed software
-
-Each software package should be configured as per the sections above.
-A few high-level settings are also needed.  These are:
-
- - =install_area= :: the directory under which all required software
-                     is installed.
-
- This can either be set in a job harness configuration file (see
- [[./design.org]]) or as the =LCATR_INSTALL_AREA= environment variable.
-
-** Preparing The Results Archive and Local Stage
-
-Files resulting from a test or analysis job are first populated in the
-job's working directory which exists as a sub-directory rooted in the
-local stage file system.  When the job finishes successfully the
-result files will be copied to the central archive in a similarly
-named sub-directory.  If the job requires files produced by prior jobs
-the harness will copy these to the stage, preserving their
-sub-directory names.
-
-Before running any jobs the archive and local stage root must be
-created and be accessible by the harness (as they are specified with
-the relevant harness configuration parameters).  Any job specific
-directories in the archive or the local stage are created by the
-harness and it is an error if they preexist.  If other job output
-is found to preexist in the local stage it will used as-is.
-
-
+In the example, =$pkg= matches the =<Name>= and =$tag= matches the
+=<Version>= of the prior example.  Note that error and overwrite
+checks are omitted here.

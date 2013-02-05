@@ -3,9 +3,22 @@
 User interface to the job harness.
 '''
 
+import sys
 import argparse
 from lcatr.harness import config
 from lcatr.harness import job as jobmod
+
+non_job_steps = ['help','dump']
+
+def do_help(cfg):
+    print 'usage: lcatr_harness [options] [steps]'
+    return 'help called'
+
+def do_dump(cfg):
+    print 'Configuration:'
+    for k,v in sorted(cfg.__dict__.items()):
+        print '%s: %s' % (k,v)
+    sys.exit(1)
 
 def cmdline(args):
     'LSST CCD Aceptance Test Job Harness'
@@ -22,7 +35,7 @@ def cmdline(args):
 
     optarg = parser.parse_args(args)
 
-    steps = None
+    steps = []
     kwds = {}
     for opt,arg in optarg.__dict__.iteritems():
         if not arg: continue
@@ -32,6 +45,14 @@ def cmdline(args):
         kwds[opt] = arg
 
     cfg = config.Config(**kwds)
+    
+    for what in set(steps).intersection(non_job_steps):
+        steps.remove(what)
+        meth = eval('do_%s' % what)
+        msg = meth(cfg)
+        if msg:
+            parser.error(msg)
+        continue
     
     job = jobmod.Job(cfg)
     job.run(steps)

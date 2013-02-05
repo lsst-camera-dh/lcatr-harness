@@ -1,33 +1,42 @@
 #+TITLE: LCATR Job Developer Instructions
 #+SETUPFILE: setup.org
 
-Instructions for an LSST CCD Test Software Developer
-
 This document describes the steps needed to make your LSST CCD (or
-RTM) test or analysis software work in a production setting.  Besides
-the first section it gives only brief instructions; the "what to do"
-if not the "why to do it".
+RTM) test or analysis software work in a production testing setting.
+Compliant software will be run based on a specifically installed
+version, its results will be archived in an organized fashion and will
+be run only when any required previous jobs have finished and their
+output is available, and finally will have a summary uploaded to the
+LIMS database for future querying.  To achieve these goals in a
+uniform manner your software must run under a job /harness/.
 
 * Introduction
 
-Your software which performs a CCD (or RTM) test or an analysis of
-test output must adhere to several requirements in order for it to run
-in a production setting.  In order to assure requirements are met your
-software is not directly run by an operator (user) but rather is run
-through a "shim" program called the /job harness/.  To "glue" your
-software to this shim you must satisfy the following steps:
+In order to be "harnessed" your software must be augmented to satisfy
+the following aspects:
+
+ - Provide an installation mechanism that fits into the versioning
+   system.
+
+ - Provide the required executable entry points.
+
+ - Adhere to output file location rules.
+
+It is expected that these aspects can be satisfied by writing thing
+"shim" scripts that "glue" your existing software into the job
+harness.  The expected, general steps to follow are:
 
  0) Develop your software.  This can be done separately from the rest
     of the steps but they are best taken under consideration.
 
- 1) Develop the two main programs called by the harness.
+ 1) Develop the required two main programs (/producer/ and
+    /validator/) called by the harness for each atomic job.
 
- 2) Provide a file that describes the required environment variables.
+ 2) Provide an environment /modulefile/ that describes the required
+    environment variables and a suitable installation mechanism.
 
- 3) Pushed tagged releases of your software into a remote git
+ 3) Push tagged releases of your software into a remote git
     repository.
-
- 4) Provide suitable installation instructions or mechanisms.
 
 The instructions for each step are described in detail in the rest of
 this document.  In addition, for information about testing your
@@ -71,27 +80,28 @@ rules to keep in mind:
  - it must run in "batch" or command line mode and not require any
    interactive input.  
 
- - it must write any important output files to the current working
-   directory, writing outside of this directory is not allowed.
-
- - it should name files in a static manner and not encode variable
-   information such as the CCD ID, time stamps.  This rule is
-   particularly important for any files that must be read into
-   subsequent analysis jobs
+ - it must write any important output files to the *current working
+   directory*, writing outside of this directory is not allowed.
 
  - if it requires a MS Windows host it must be able to run from the
    Cygwin environment
 
+It is recommended that output file names be static from job to job and
+not encode timestamps, CCD IDs, version strings, etc as these are
+reflected by the job harness in the output directory path and are
+recorded to the LIMS database.  Encoding this information makes it
+more difficult for downstream processing to locate input files.
 
 * Two main programs
 
-The harness will run two programs one after the other which are
-provided by your software.  They may be named as you like but first is
-identified as the /producer/ and the second as the /validator/.  They
-will likely be written as interpreted scripts but need not be.
+For each atomic job, the harness will run two programs one after the
+other which must be provided by your software.  They may be named as
+you like but first is identified as the /producer/ and the second as
+the /validator/.  They will likely be written as interpreted scripts
+but need not be.
 
 The /producer/ program is meant to perform the primary functionality
-your test or analysis software.  It is free to produce any needed
+of your test or analysis software.  It is free to produce any needed
 output files which may be in any desired format.
 
 The validator program has two responsibilities.  First, it should
@@ -241,24 +251,5 @@ need to communicate this to LIMS.
 
 * Installation
 
-
-** Installation Location
-
-The software manager will arrange for your software to be put in the
-"install area" for the host machines that require it.  Your software
-will be installed in a directory located via:
-
-#+begin_example
-<install area>/<name>/<tag>/
-#+end_example
-
-Where the =<name>= is the canonical name of your software and the
-=<tag>= is the reported git tag.
-
-** Mechanism
-
-The installation mechanism must be provided by you and you are free to
-use any reasonable approach.  The software manager will run your
-installation mechanism with the above directory as the installation
-root (a.k.a. the "prefix" in used by some installation mechanisms).
+Specifics are found in the document [[./installatin.org][LCATR Job Installation]].
 

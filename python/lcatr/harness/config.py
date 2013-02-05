@@ -107,7 +107,7 @@ class Config(object):
             continue
         #print 'Trying files:',' '.join(files)
         used = scp.read(files)
-        #print 'Loaded files:',' '.join(used)
+        print 'Loaded files:',' '.join(used)
         #dump_dict('Defaults:',scp.defaults())
         cfg.update(scp.defaults())
         #dump_dict('After cfgfile',cfg)
@@ -117,7 +117,7 @@ class Config(object):
         #dump_dict('After kwds:',cfg)
 
         # Apply section defaults
-        def resolve_section(param,value):
+        def resolve_section(param, value):
             secname = param +' '+ value
             if not scp.has_section(secname): 
                 return
@@ -138,7 +138,7 @@ class Config(object):
         #dump_dict('After section',cfg)
                     
         self.__dict__.update(cfg)
-        #dump_dict('Final', cfg)
+        #dump_dict('Final', self.__dict__)
 
         for imp in Config.allow_implicit:
             meth = eval ("self.guess_%s"%imp)
@@ -228,7 +228,7 @@ class Config(object):
 
     def subdir(self, prefix=None):
         '''
-        Construct and return the subdir relative to CCDTEST_ROOT.
+        Construct and return the subdir relative to LCATR_ROOT.
         '''
         if prefix == 'archive': prefix = self.archive_root + '/'
         if prefix == 'stage':   prefix = self.stage_root + '/'
@@ -239,7 +239,7 @@ class Config(object):
 
     def archive_rsync_path(self):
         '''
-        Return an rsync'able path for the remote archive CCDTEST_ROOT
+        Return an rsync'able path for the remote archive LCATR_ROOT
         '''
         s = '%(archive_user)s@%(archive_host)s:%(archive_root)s' % self.__dict__
         return s
