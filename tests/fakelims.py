@@ -93,17 +93,19 @@ class FakeLimsDB(object):
         """
         Update the status of the jobid
         """
-        self.status[jobid].append((state,status))
+        self.status[jobid].append(dict(state=state,status=status,stamp=time.time()))
         return
 
     pass
 
 class FakeLimsCommands(object):
     
+    # function: [expected, args]
     API = {
         'requestID':      ['stamp','unit_type','unit_id', 'job', 'version', 'operator'],
         'update': ['jobid','stamp','step','status'],
-        'ingest': ['jobid','stamp','result']
+        'ingest': ['jobid','stamp','result'],
+        'status': ['jobid','status'],
         }
 
     def __init__(self):
@@ -154,6 +156,42 @@ class FakeLimsCommands(object):
         logging.info(str(result))
         return {'acknowledge': None}
 
+    def cmd_status(self, status, jobid):
+        "Retrieve status of given job and status type"
+        logging.info('Status request of type "%s" from jobid %d' % (status, jobid))
+        meth = eval('self.cmd_status_%s' % status)
+        return meth(jobid)
+
+    def cmd_status_registration(self, jobid):
+        jr = self.db.registration(jobid)
+        if not jr:
+            return dict(jobid=jobid, status='registration', error='No such jobid')
+        ret = [jr]
+        prereqs = self.traveler.prereq(jr['job'],jr['version']) or []
+        for pr_name, pr_ver in prereqs: 
+            tofind = dict(jr, job=pr_name, version=pr_ver)
+            jid = self.db.lookup(**tofind)
+            if jid is None:
+                msg = 'Failed to find prerequisite: %s'%str(tofind)
+                logging.error(msg)
+                return {'jobid':None, 
+                        'error':msg}
+            job_info = self.db.registration(jid)
+            ret.append(job_info)
+            continue
+        # fixme ^^^ refactor out this copy-pasta with cmd_requestID()
+        return dict(jobid=jobid, status='registration', prereq=ret)
+
+    def cmd_status_update(self, jobid):
+        s = self.db.status[jobid]
+        r = dict(jobid=jobid, status='update')
+        if not s:
+            r['error'] = 'acknowledge','No status registered for jobid %d' % jobid
+        else:
+            r['steps'] = s
+        return r
+        
+
     pass
 
 lims_commands = FakeLimsCommands()
@@ -197,7 +235,9 @@ class FakeLimsHandler(BaseHTTPRequestHandler):
             return
 
         pvars = self.postvars()
-        logging.debug('CMD:"%s" POSTVARS:"%s"' % (cmd,pvars))
+        chirp = 'CMD:"%s" POSTVARS:"%s"' % (cmd,pvars)
+        print chirp
+        logging.debug(chirp)
 
         required_params = set(api)
 

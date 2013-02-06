@@ -177,7 +177,8 @@ class Config(object):
 
     def guess_install_area(self):
         if hasattr(self,'install_area'): return self.install_area
-        self.install_area = os.environ.get('VIRTUAL_ENV','')
+        ve = os.environ.get('VIRTUAL_ENV','')
+        self.install_area = ve + '/share' if ve else None
         return self.install_area
 
     def guess_modules_home(self):

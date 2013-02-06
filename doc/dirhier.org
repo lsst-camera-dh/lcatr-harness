@@ -72,9 +72,13 @@ Some standard environment variables are defined on a per-job basis:
 
  - =$LCATR_JOB_ID= :: a job identifier unique to the site
 
- - =$LCATR_CCD_ID= :: an identifier for the CCD being tested.
+ - =$LCATR_UNIT_ID= :: an identifier for the unit (CCD/RTM) being tested.
 
- - =$LCATR_NAME= :: the canonical name of the test.
+ - =$LCATR_UNITD_TYPE= :: the type of unit tested (CCD/RTM)
+
+ - =$LCATR_JOB= :: the canonical name of the test.
+
+ - =$LCATR_VERSION= :: the version of the test software being run.
 
  - =$LCATR_STAMP= :: the time stamp for which the test results will
       be recorded.

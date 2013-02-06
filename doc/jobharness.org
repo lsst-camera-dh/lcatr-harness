@@ -99,7 +99,7 @@ parameters:
 
  - =LCATR_UNIT_ID= :: the unique identifier of the unit
 
- - =LCATR_NAME= :: the canonical name of the test
+ - =LCATR_JOB= :: the canonical name of the test
 
  - =LCATR_VERSION= :: the version string for the job's software
 

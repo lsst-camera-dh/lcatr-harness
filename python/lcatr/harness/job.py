@@ -41,7 +41,6 @@ class Job(object):
         'unit_type',    # type of unit (eg, CCD/RTM)
         'unit_id',      # The unique unit identifier
         'install_area', # base to where software is installed
-        #'modules',      # where the job harnessed modulefiles can be found
         ]
 
 
@@ -83,17 +82,34 @@ class Job(object):
                 meth()
             except Exception,err:
                 msg = 'Error with step %s: %s' % (step, err)
+                print msg
                 util.log.error(msg)
                 if self.lims and stepped:
                     self.lims.update(step=stepped,status=msg)
                 raise
             else:
-                util.log.info('Step %s completed' % step)
+                msg = 'Step %s completed' % step
+                print msg
+                util.log.info(msg)
                 if self.lims and stepped: 
                     self.lims.update(step=stepped)
             continue
         return
             
+    def rerun(self, steps = None):
+        '''
+        Rerun post-registration steps of the job that have not already run.
+        '''
+        self.do_configure()     # always
+        
+        # reregister
+        self.lims = lims.Results(self.cfg.lims_url)
+
+        print 'Rerunning with steps: %s' % (', '.join(steps), )
+        self.run(steps)
+        return
+
+
     def do_configure(self):
         '''
         Configure the job environment.
@@ -108,14 +124,14 @@ class Job(object):
         method to execute external programs. 
         '''
         
-        em = environment.cfg2em(self.cfg)
+        self.em = environment.cfg2em(self.cfg)
 
         modfile = os.path.join(self.cfg.job, self.cfg.version)
         try:
-            em.load(modfile)
+            self.em.load(modfile)
         except RuntimeError, msg:
             print 'Got runtime error: "%s"' % msg
-            for k,v in em.env.iteritems():
+            for k,v in self.em.env.iteritems():
                 if k.startswith(self.cfg.envvar_prefix):
                     print '%s = %s' % (k,v)
             raise
@@ -123,10 +139,10 @@ class Job(object):
 
         # This needs to be imported so our own attempts at validating
         # the result summary data can find potential schema files.
-        if em.env.has_key('LCATR_SCHEMA_PATH'):
-            os.environ['LCATR_SCHEMA_PATH'] = em.env['LCATR_SCHEMA_PATH']
+        if self.em.env.has_key('LCATR_SCHEMA_PATH'):
+            os.environ['LCATR_SCHEMA_PATH'] = self.em.env['LCATR_SCHEMA_PATH']
         print 'Loading schema with schema path: "%s"' % \
-            em.env.get('LCATR_SCHEMA_PATH')
+            self.em.env.get('LCATR_SCHEMA_PATH')
         lcatr.schema.load_all()
 
         self._check_archive()

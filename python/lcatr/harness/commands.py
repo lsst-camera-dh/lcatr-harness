@@ -62,11 +62,11 @@ def execute(cmdstr, env = None, out = None):
     # it to out() until command finishes
     res = None
     while True:
-        line = proc.stdout.readline()
+        oline = proc.stdout.readline()
         res = proc.poll()
 
-        if line:                # pass to caller
-            slurp(line)
+        if oline:
+            slurp(oline)
 
         if res is None:         # still running
             continue
@@ -81,6 +81,7 @@ def execute(cmdstr, env = None, out = None):
         return
     err = 'Command: "%s" failed with code %d' % (' '.join(cmdstr), res)
     log.warning(err)
+    log.warning('Running environment:\n\t%s' % '\n\t'.join(['%s: %s'%i for i in sorted(env.items())]))
     raise CommandFailure, err
 
 

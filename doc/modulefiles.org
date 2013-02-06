@@ -72,7 +72,7 @@ the /modulefile/.
 The call to the =lcatr_package= function will produce these
 environment variables. 
 
- - =LCATR_NAME= :: the canonical name of the package.
+ - =LCATR_JOB= :: the canonical name of the package.
 
  - =LCATR_VERSION= :: the version of the package.
 

@@ -77,8 +77,6 @@ def guess_modules_path():
 
     return ""
 
-
-
 def resolve_modulepath(home, env = None, modpath = None):
     """
     Resolve the default modulepath in the way that the "module" command would.
@@ -198,10 +196,10 @@ class Modules(object):
         modpath = resolve_modulepath(home, env = self.env, modpath = modpath)
 
         # insert lcatr job expectations
-        #modpath = [self.install_area, self.modules] + modpath
-        modpath = [self.install_area] + modpath
+        modpath += [self.install_area]
 
         self.env['MODULEPATH'] = ':'.join(modpath)
+        self.env['LCATR_MODULES'] = self.install_area + '/modulefiles'
 
         return
 
@@ -305,7 +303,13 @@ class Modules(object):
         Execute the command string in the environment.
         '''
         import commands
-        return commands.execute(cmdstr, self.env, out)
+        try:
+            ret = commands.execute(cmdstr, self.env, out)
+        except OSError:
+            msg = 'Failed to run: %s' % cmdstr
+            print msg
+            log.error(msg)
+            raise
         
 
     pass

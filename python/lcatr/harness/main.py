@@ -62,7 +62,12 @@ def cmdline(args):
         continue
     
     job = jobmod.Job(cfg)
-    job.run(steps)
+
+    if cfg.__dict__.has_key('job_id'):
+        print 'Rerun with steps: %s' % (', '.join(steps), )
+        job.rerun(steps)
+    else:
+        job.run(steps)
 
 
 if '__main__' == __name__:

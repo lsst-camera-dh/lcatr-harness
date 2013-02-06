@@ -16,6 +16,7 @@ API = {
     'requestID':['jobid','stamp','unit_type','unit_id', 'job', 'version', 'operator'],
     'update'   :['jobid','stamp','step','status'],
     'ingest'   :['jobid','stamp','result'],
+    'status'   :['jobid','status'],
 
     # details:
     'known_steps':[ 'configured','staged','produced','validated','archived','purged'],
@@ -66,8 +67,8 @@ class Results(object):
         query = self.make_params(command,**kwds)
 
         jdata = json.dumps(query)
-        log.debug('Query LIMS "%s" with "%s"' % (command, jdata))
         qdata = urllib.urlencode({'jsonObject':jdata})
+        log.debug('Query LIMS "%s" with json="%s", query="%s"' % (command, jdata, qdata))
 
         url = self.lims_url + command
         fp = urllib.urlopen(url, qdata)
@@ -75,7 +76,10 @@ class Results(object):
         try:
             jres = json.loads(page)
         except ValueError, msg:
-            print 'Failed to load return page with qdata="%s" url="%s" got:\n%s' % (qdata, url, page)
+            msg = 'Failed to load return page with qdata="%s" url="%s" got: "%s" (JSON error: %s)' %\
+                (qdata, url, page, msg)
+            print msg
+            log.error(msg)
             raise
         return jres
         
@@ -96,11 +100,48 @@ class Results(object):
         self.jobid = jobid
         prereq = []
         for pr in res['prereq']:
-            # LIMS API specifies "jobid" w/out a separator, harness has "job_id"
+            # LIMS API specifies "jobid" w/out an underscore, harness has "job_id"
             pr = dict(pr,job_id = pr['jobid'])
             prereq.append(pr)
         self.prereq = prereq
         return jobid
+
+    def reregister(self, jobid):
+        """
+        Reuse an existing job ID.  This will re-request and set the
+        .prereq member and will return the previously updated status
+        reports.
+        """
+        msg = 'Reregistering with jobid=%d' % jobid
+        self.jobid = jobid
+        print msg
+        log.info(msg)
+        reg = self.make_query('status', status='registration', jobid=jobid)
+        if reg.has_key('error'):
+            msg = 'Failed to request registration status for jobid %d (LIMS: %s)' % \
+                (jobid, reg['error'])
+            log.error(msg)
+            raise ValueError, msg
+
+        upd = self.make_query('status', status='update', jobid=jobid)
+        if upd.has_key('error'):
+            msg = 'Failed to request update status for jobid %d (LIMS: %s)' % \
+                (jobid, upd['error'])
+            log.error(msg)
+            raise ValueError, msg
+
+        assert (jobid == reg['jobid'])
+
+        prereq = []
+        for pr in reg['prereq']:
+            # LIMS API specifies "jobid" w/out an underscore, harness has "job_id"
+            pr = dict(pr,job_id = pr['jobid'])
+            prereq.append(pr)
+        self.prereq = prereq
+
+        #print upd
+        return upd['steps']
+        
 
     def update(self, **kwds):
         '''
@@ -109,7 +150,7 @@ class Results(object):
         explain the error that occured.  Return None if accepted or an
         explanation string if LIMS thinks the caller should terminate.
         '''
-        kwds = dict(kwds, status = None)
+        kwds.setdefault('status',None)
         query = self.make_params('update',**kwds)
         step = query['step']
         if not step in API['known_steps']:
