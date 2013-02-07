@@ -105,7 +105,7 @@ class Job(object):
         # reregister
         self.lims = lims.Results(self.cfg.lims_url)
 
-        print 'Rerunning with steps: %s' % (', '.join(steps), )
+        #print 'Rerunning with steps: %s' % (', '.join(steps), )
         self.run(steps)
         return
 
@@ -284,7 +284,6 @@ class Job(object):
                             self.cfg.archive_host,
                             self.cfg.archive_user)
         if s: 
-            print s
             return False
         o = o.strip()
         if not o: return False
