@@ -85,14 +85,20 @@ class Job(object):
                 print msg
                 util.log.error(msg)
                 if self.lims and stepped:
-                    self.lims.update(step=stepped,status=msg)
+                    ret = self.lims.update(step=stepped,status=msg)
+                    if ret:
+                        util.log.error(str(ret))
+                        print str(ret)
                 raise
             else:
                 msg = 'Step %s completed' % step
                 print msg
                 util.log.info(msg)
                 if self.lims and stepped: 
-                    self.lims.update(step=stepped)
+                    ret = self.lims.update(step=stepped)
+                    if ret:
+                        util.log.error(str(ret))
+                        print str(ret)
             continue
         return
             
@@ -270,7 +276,9 @@ class Job(object):
         '''
         Upload to lims
         '''
-        self.lims.ingest(self.result) # self.result filled in do_validate()
+        ret = self.lims.ingest(self.result) # self.result filled in do_validate()
+        if ret:
+            raise RuntimeError, str(ret)
         return
 
     def do_purge(self):
