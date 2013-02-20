@@ -2,10 +2,10 @@
 '''
 Interface with LIMS
 '''
-
 import time
 import json
-import urllib
+from urllib import urlencode
+from urllib2 import urlopen
 
 from util import log
 
@@ -67,11 +67,12 @@ class Results(object):
         query = self.make_params(command,**kwds)
 
         jdata = json.dumps(query)
-        qdata = urllib.urlencode({'jsonObject':jdata})
+        qdata = urlencode({'jsonObject':jdata})
         log.debug('Query LIMS "%s" with json="%s", query="%s"' % (command, jdata, qdata))
 
         url = self.lims_url + command
-        fp = urllib.urlopen(url, qdata)
+        
+        fp = urlopen(url, data=qdata)
         page = fp.read()
         try:
             jres = json.loads(page)
