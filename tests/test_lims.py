@@ -21,13 +21,16 @@ def test_register():
                         version = 'v0',
                         operator = 'bv')
     print 'Registered as jobid %d' % res.jobid
+    time.sleep(1)
 
     for step in [x for x in Job.report_as if x]:
-        print 'Updating step: "%s"' % step
-        res.update(jobid = res.jobid,
-                   stamp = time.time(),
-                   step = step,
-                   status = "")
+        print 'Updating step: "%s"...' % step,
+        ret = res.update(jobid = res.jobid,
+                         stamp = time.time(),
+                         step = step,
+                         status = "")
+        print ret
+        time.sleep(1)
 
     summary = {'schema_name':'fileref',
                'schema_version':0,
@@ -35,7 +38,8 @@ def test_register():
                "sha1": 'da39a3ee5e6b4b0d3255bfef95601890afd80709',
                "size": 0,
                }
-    res.ingest(summary)
+    ret = res.ingest(summary)
+    print ret
 
     global a_job_id
     a_job_id = res.jobid
