@@ -4,9 +4,12 @@ import os
 
 from lcatr.harness import remote
 
+remotehost = "rftpexp02.rhic.bnl.gov"
+
 def test_rhostname():
-    lname = os.uname()[1]
-    s,o,e = remote.cmd("hostname")
+    #lname = os.uname()[1]
+    lname = remotehost
+    s,o,e = remote.cmd("hostname", remotehost)
     assert s == 0, 'Got non-zero status for hostname: %d, %s' % (s,e)
     rname = o.strip()
     assert lname == rname, \
@@ -15,14 +18,14 @@ def test_rhostname():
 
 def try_rstat(path,expect_success):
     try:
-        s,o,e = remote.stat(path,'doesnotexist')
+        s,o,e = remote.stat(path,host='doesnotexist')
     except RuntimeError,msg:
         #print 'Error as expected: "%s"' % msg
         pass
     else:
         raise
 
-    s,o,e = remote.stat(path)
+    s,o,e = remote.stat(path, host=remotehost)
     if not expect_success and s == 0:
         assert False, 'Expected failure but got (%d) with remote stat %s' % \
             (s,path)
@@ -60,5 +63,5 @@ if __name__ == '__main__':
     
     test_rhostname()
     test_rstat_success()
-    test_rstat_failure()
-    test_rsync()
+    #test_rstat_failure()
+    #test_rsync()

@@ -83,7 +83,7 @@ You should now be able to run this simple test:
 
 #+begin_example
 python -c 'from lcatr import schema; print schema.store'
-lcatr_harness --help
+lcat-harness --help
 #+end_example
 
 ** Preparing a release of Job Harness
