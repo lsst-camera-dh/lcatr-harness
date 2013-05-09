@@ -5,7 +5,7 @@ from distutils.core import setup
 setup(name='lcatr-harness',
       provides = ["lcatr.harness"],
       requires = ["lcatr"], 
-      version='0.2rc-1',
+      version='0.2rc-2',
       url='https://git.racf.bnl.gov/astro/cgit/lcatr/harness.git',
       author='Brett Viren',
       author_email='bv@bnl.gov',
