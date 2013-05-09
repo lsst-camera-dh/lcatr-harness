@@ -14,6 +14,7 @@ def test_rhostname():
     rname = o.strip()
     assert lname == rname, \
         'Did not get expected hostname "%s" != "%s"' % (lname,rname)
+    #print rname
     return
 
 def try_rstat(path,expect_success):
@@ -40,6 +41,7 @@ def try_rstat(path,expect_success):
         assert False, 'Expected success but not output for %s' % path
     if not expect_success and out:
         assert False, 'Expected failure got output for %s' % path
+    #print 'remote stat:', out
     return
 
 def test_rstat_failure():

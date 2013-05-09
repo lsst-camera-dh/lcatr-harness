@@ -16,6 +16,22 @@ def dump_dict(msg,d):
     for k,v in d.iteritems():
         print '\t%s:%s'%(k,v)
 
+def resolve_files(defaults, **kwds):
+    files = list(defaults)
+    for what in ['config','configs','filename','filenames']:
+        fn = kwds.get(what)
+        if not fn: continue
+        if isinstance(fn,str): 
+            fn = [fn]
+        files += fn
+        del kwds[what]
+        continue
+    #print 'Trying files:',' '.join(files)
+    files = map(os.path.expanduser,files)
+    files = map(os.path.expandvars,files)
+    return files, kwds
+
+
 class Config(object):
     '''
     The configuration for a job harness instance.
@@ -81,6 +97,7 @@ class Config(object):
         ]
 
 
+
     def __init__(self, **kwds):
         
         cfg = {}
@@ -96,17 +113,8 @@ class Config(object):
 
 
         # open config file(s) and slurp the [default] section 
+        files, kwds = resolve_files(self.default_config_files, **kwds)
         scp = SafeConfigParser()
-        files = list(Config.default_config_files)
-        for what in ['config','configs','filename','filenames']:
-            fn = kwds.get(what)
-            if not fn: continue
-            if isinstance(fn,str): 
-                fn = [fn]
-            files += fn
-            del kwds[what]
-            continue
-        #print 'Trying files:',' '.join(files)
         used = scp.read(files)
         print 'Loaded configuration files:',' '.join(used)
         #dump_dict('Defaults:',scp.defaults())

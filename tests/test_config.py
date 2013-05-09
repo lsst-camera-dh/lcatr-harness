@@ -10,6 +10,15 @@ import tempfile
 cfgfd = None,
 cfgfile = None
 
+def test_files():
+    files, kwds =  config.resolve_files(config.Config.default_config_files,
+                                        a='b', config='foo.cfg', filenames=['bar.cfg','baz.cfg'])
+
+    for n in ['foo.cfg', 'bar.cfg', 'baz.cfg']:
+        assert n in files
+    assert kwds == {'a': 'b'}
+    return
+
 def make_cfgfile():
     fd = tempfile.NamedTemporaryFile()
     fn = fd.name
@@ -67,19 +76,24 @@ def test_missing():
     '''
     c = config.Config(filename=cfgfile)
     missing = set(c.missing())
-    missed = set(['version', 'job_id', 'local', 'job', 'unit_id'])
+    missed = set(['archive_host', 'archive_root', 'archive_user','lims_url',
+                  'version', 'job_id', 'local', 'job', 'unit_id'])
     assert missing == missed, "Unexpected missing: %s != %s" % \
         (sorted(missing),sorted(missed))
 
     e1 = set(c.extra())
-    e2 = set(['unknown_parameter','site','modules'])
+    e2 = set(['unknown_parameter','site'])
     assert e1 == e2, "Unexpected extra: %s != %s" %(e1,e2)
     return
 
-if __name__ == '__main__':
+def do_all():
+    test_files()
     test_make_cfgfile()
     test_env()
     test_dump()
     test_incomplete()
     test_missing()
+
+if __name__ == '__main__':
+    do_all()
 
