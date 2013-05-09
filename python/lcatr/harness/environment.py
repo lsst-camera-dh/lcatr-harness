@@ -10,12 +10,18 @@ from glob import glob
 from util import log
 
 guessed_bases = [
+    '$VIRTUAL_ENV/Modules/[0-9]*',
     '/opt/lsst/SL53/Modules/[0-9]*',
     '$HOME/opt/modules/Modules/[0-9]*',
     '/usr/share/modules/Modules/[0-9]*',
 ]
 
 def guess_modules_thing(thing, bases = guessed_bases):
+    '''
+    Look for "thing" in list of base directories that may have
+    environment variables and will be glob'bed.  If multiple globs,
+    return lexically highest.  First fit wins.
+    '''
     for base in bases:
         path = os.path.join(base,thing)
         path = os.path.expandvars(path)

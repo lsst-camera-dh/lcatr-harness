@@ -7,6 +7,9 @@ from lcatr.harness import environment
 
 em = None
 
+def test_guess_modules_cmd():
+    'Test guessing the modules path'
+    print environment.guess_modules_cmd()
 def test_guess_modules_path():
     'Test guessing the modules path'
     print environment.guess_modules_path()
@@ -41,6 +44,7 @@ def test_dump():
 
 
 def do_all():
+    test_guess_modules_cmd()
     test_guess_modules_path()
     test_create()
     test_load()
