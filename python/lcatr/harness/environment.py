@@ -69,19 +69,12 @@ def guess_modules_version():
     return os.path.basename(ver)
 
 def guess_modules_path():
+    ret = os.path.expandvars("$VIRTUAL_ENV/share")
     mp = os.environ.get('MODULEPATH')
-    if mp: return mp
+    if mp:
+	ret += ':' + mp
 
-    # try to find modulefiles/ based on where this file is.  this
-    # really shouldn't be used and instead be specified out-of-band by
-    # LCATR_MODULES env. var.
-    path = __file__.split('/')
-    if len(path) > 5:
-        mpath = '/'.join(path[:-5] + ['modulefiles'])
-        if os.path.exists(mpath):
-            return mpath
-
-    return ""
+    return ret
 
 def resolve_modulepath(home, env = None, modpath = None):
     """
