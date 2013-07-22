@@ -1,16 +1,178 @@
 #+TITLE: LCATR Job Developer Instructions
 #+SETUPFILE: setup.org
 
-This document describes the steps needed to make your LSST CCD (or
-RTM) test or analysis software work in a production testing setting.
-Compliant software will be run based on a specifically installed
-version, its results will be archived in an organized fashion and will
-be run only when any required previous jobs have finished and their
-output is available, and finally will have a summary uploaded to the
-LIMS database for future querying.  To achieve these goals in a
-uniform manner your software must run under a job /harness/.
+* Overview
 
-* Introduction
+This document describes how to develop job software while testing it under the Job Harness and what needs to be done in order to make releases of job software for production deployment.
+
+
+** Requirements
+
+The Job Harness runs your software through two main programs in order to assure required input files are available and to capture any produced output files.  It a production setting it also controls which versions of the job software are available and run. 
+
+In order to provide this it make some requirements on the operating environment, job software and LIMS server.
+
+*** Environment Requirements:
+
+The running environment must provide:
+
+ - access to the archive file server
+ - a local staging disk area
+
+*** Job Software Requirements
+
+The job software must be written to provide:
+
+ - a "producer" and a "validator" main programs which require no input other than what the harness provides
+ - a registration of these files following a particular convention (via an Environment Modules =modulefile=)
+
+*** LIMS requirements
+
+For a job to run under the Job Harness it must first be registered with LIMS.  Only job name/version pairs that are registered may be run through the Job Harness.  It is also through LIMS that any dependencies are expressed.  If JobB needs the output file from JobA, it is through this registration where that is declared.
+
+
+* Development
+
+This section describes how to configure your account to develop your job software while running it under the Job Harness.  When a concrete example is shown it assumes the account name is *operator*, the job name is *analyze* and the job version is *devel*.  In a production deployment the job version should indicate an actual version. (v1.2.3, etc).
+
+There is much flexibility in how development is done while still using the job harness.  Depending on the number of jobs and their granularity and interrelatedness these following examples may be expanded on.  
+
+** Top-level working directory
+
+Pick some top-level working directory to work in:
+
+#+BEGIN_EXAMPLE
+$ mkdir /home/operator/lcatr
+$ cd /home/operator/lcatr
+#+END_EXAMPLE
+
+For the following sections, all relative directories will be w.r.t. this one.
+
+** Job Harness software
+
+For development, a production deployment of the Job Harness should be used.  It is installed into a =virtualenv= directory.  To set up your shell environment it is suggested to run and configure a subshell.  This can be done by making two short shell scripts:
+
+In your top-level working directory, copy this into =job-harness-shell=:
+
+#+BEGIN_SRC sh
+#!/bin/bash
+mydir=$(dirname $(readlink -f $BASH_SOURCE))
+ssh-agent /bin/bash --rcfile $mydir/job-harness.sh
+#+END_SRC
+
+And, copy this into =job-harness.sh=:
+
+#+BEGIN_SRC sh
+#!/bin/bash
+source VIRTUALENV/bin/activate
+export PS1="(jh)\u@\h:\w> "
+export https_proxy=http://lsstproxy.rcf.bnl.gov:3128/
+export http_proxy=http://lsstproxy.rcf.bnl.gov:3128/
+#+END_SRC
+
+Now edit this last one:
+
+#+BEGIN_EXAMPLE
+$ emacs job-harness.sh
+$ chmod +x job-harness-shell
+#+END_EXAMPLE
+
+And replace =VIRTUALENV= with the directory holding the =virtualenv= area.
+
+You can now start your shell:
+
+#+BEGIN_EXAMPLE
+$ ./job-harness-shell
+(jh)$ lcatr-harness --help
+(jh)$ exit
+#+END_EXAMPLE
+
+After running =job-harness-shell= you may notice your prompt now has a =(jh)= prepended to indicate a sub-shell was started.  At this point you can run the Job Harness with the =--help= flag to see its help page.  When done using the harness you can =exit= the shell and drop back to your normal one.
+
+** The archive key
+
+Your account needs an SSH private key that can be used to access the archive account.  Normally this is installed by the deployment system.  You may get one for use in development.
+
+#+BEGIN_EXAMPLE
+$ cp .... ~/.ssh/id_archive
+$ chmod 400 ~/.ssh/id_archive
+#+END_EXAMPLE
+
+** Job Harness default configuration
+
+The Job Harness takes many parameters.  To avoid having to specify them on the command line all the time it is recommended that they be placed in a configuration file which goes in the operators home directory.
+
+Copy this to =~/.lcatr.cfg=:
+#+BEGIN_EXAMPLE
+[DEFAULT]
+archive_host = astroftp.rhic.bnl.gov
+lims_url = https://www.lsst.bnl.gov:8088
+archive_user = ccdarxiv
+unit_type = CCD
+user = ccdtest
+archive_root = /astro/astronfs01/ccdarchive/tst
+stage_root = /PATH/TO/LOCAL/stage
+#+END_EXAMPLE
+
+Now, edit the file and set the =stage_root= variable to point to a
+large disk which you can write to.
+
+** The =modulefile=
+
+Your job software main programs are located by the Job Harness with an [[http://modules.sf.net/][Environment Modules]] =modulefile=.  This file itself is located by searching for it in a sub-directory named like =<job name>/<job version>/modulefile=.  Make this directory in your working area
+
+#+BEGIN_EXAMPLE
+$ mkdir -p lcatr/analyze/devel
+#+END_EXAMPLE
+
+Or, if you already have code in a repository clone it into a "devel" target
+
+#+BEGIN_EXAMPLE
+$ mkdir -p lcatr/analyze/
+$ git clone http://git.server//analyze lcatr/analyze/devel
+#+END_EXAMPLE
+
+Now, edit the =lcatr/analyze/devel/modulefile= to look something like:
+
+#+BEGIN_EXAMPLE
+#%Module1.0 #-*-tcl-*-#
+source "$::env(LCATR_MODULES)/lcatr.tcl"
+lcatr_package /home/operator/lcatr/analyze/devel/producer /home/operator/lcatr/analyze/devel/validator
+#+END_EXAMPLE
+
+This last line is the important one and sets the path to your =producer= and =validator= programs.  They should be adjusted to match their actual names.  Note, when readied for development this line should not include absolute paths to the producer/validator programs.
+
+Note, you do not have to keep the producer/validator programs in the same directory as the =modulefile=.  You can also have multiple jobs implemented in one area or git repository.  However, each job needs a distinct =<job name>/<job version>/modulefile=.
+
+** Register with LIMS
+
+To register a job name/version pair with LIMS you must have a LIMS account.  At BNL you will likely have to have the special HTTP proxy set (the =job-harness-shell= example sets up the needed environment variables).  
+
+#+BEGIN_EXAMPLE
+https://www.lsst.bnl.gov:8088
+#+END_EXAMPLE
+
+Note that port 8088 is used.  This instance of LIMS is tied to the testing.  Do not use these developer instructions with the production LIMS!
+
+** Run your job
+
+Once the above has been set up you should be able to run your job software's =producer= and =validator= programs under the Job Harness.  
+
+#+BEGIN_EXAMPLE
+(jh)$ lcatr-harness --job analyze \
+                    --version devel \
+                    --unit-id 112-04 \
+                    --operator bv \
+                    --modules-path=/home/operator/lcatr
+#+END_EXAMPLE
+
+Any and all of these options may be placed in the =~/.lcatr.cfg= file.  The command line will override them.
+
+
+
+* Introduction to the rest
+
+The following is mostly from an older version of this document but still applicable.
 
 In order to be "harnessed" your software must be augmented to satisfy
 the following aspects:
@@ -251,5 +413,5 @@ need to communicate this to LIMS.
 
 * Installation
 
-Specifics are found in the document [[./installatin.org][LCATR Job Installation]].
+Specifics are found in the document [[./installation.org][LCATR Job Installation]].
 

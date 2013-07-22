@@ -6,6 +6,10 @@ Harness (JH) and the job software it runs.  It selects specific
 conventions to be followed.  And it describes how to run your software
 under the job harness in a development context.
 
+* Meta
+
+Note, this document is mostly been obsoleted by the JH deploy system.  You may find this documented here: [[../../deploy/README.org]].
+
 * Overview
 
 The Job Harness software itself is installed in a =virtualenv=[fn:venv]

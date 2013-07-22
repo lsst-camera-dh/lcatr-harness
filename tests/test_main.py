@@ -13,8 +13,11 @@ def test_cmdline():
                   '--context','UNITTEST',
                   '--unit-id','4-1201',
                   '--job-id','0', # note: this is normally given by LIMS
-                  '--job', 'fake']) # version resolved in config file
-
+                  '--job', 'fake', # version resolved in config file
+                  '--archive-root', '/tmp',
+                  '--lims-url','http://localhost/',
+                  '--archive-user','archive',
+                  ])
 
 if '__main__' == __name__:
     test_cmdline()
