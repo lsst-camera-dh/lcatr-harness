@@ -314,17 +314,23 @@ output from prior jobs.
 If you write your producer in Python the function =dependency_glob()=
 will help you search for a files matching a pattern in this path.
 
-#+BEGIN_SRC Python
-from lcatr.harness.helpers import dependency_glob
-filenames = dependency_glob("somefile_*.data")
-for filename in filenames:
-  f = open(filenames[0])
-  data = f.read()
-  ...
+#+BEGIN_SRC python
+  from lcatr.harness.helpers import dependency_glob
+  filenames = dependency_glob("somefile_*.data")
+  for filename in filenames:
+      f = open(filenames[0])
+      data = f.read()
+      # ...
 #+END_SRC
 
+** Finding the CCD ID
 
+You tell the job harness which CCD ID is being run with the =--unit-id= command line flag (or equivalent configuration file variable) and it then tells your job via the =LCATR_UNIT_ID= environment variable.  Here is how your Python code can get this information:
 
+#+BEGIN_SRC python
+  import os
+  ccd_id = os.environ['LCATR_UNIT_ID']
+#+END_SRC
 
 * Tagged release
 

@@ -3,6 +3,6 @@
 
 for what in $@
 do
-    emacs --batch -l pub.el --eval "(org-publish-project \"$what\")"
+    emacs -l pub.el --eval "(org-publish-project \"$what\")"
 done
 

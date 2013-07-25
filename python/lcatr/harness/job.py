@@ -170,15 +170,17 @@ class Job(object):
             raise RuntimeError, msg
 
         path = self.cfg.subdir_policy % depinfo
-        src = self.cfg.s('%(archive_user)s@%(archive_host)s:%(archive_root)s/') + path
+        rpath = self.cfg.s("%(archive_root)s/") + path
+        src = self.cfg.s('%(archive_user)s@%(archive_host)s:') + rpath
         dst = os.path.join(dst_root, path)
+
 
         if os.path.exists(dst):
             util.log.warning('Directory already staged: "%s"' % dst)
             return dst
 
         util.log.info('Staging from "%s" to "%s' % (src, dst))
-        rstat = remote.stat(src, host=self.cfg.archive_host, user=self.cfg.archive_user)
+        rstat = remote.stat(rpath, host=self.cfg.archive_host, user=self.cfg.archive_user)
         if rstat[0]:
             msg = 'Failed to stat remote archive directory: %s' % src
             raise RuntimeError, msg
