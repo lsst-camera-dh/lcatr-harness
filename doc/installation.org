@@ -96,9 +96,11 @@ This section is for Job Harness developers.  To prepare a release:
 
  1) Increment the version string in =setup.py=
 
- 2) Produce a source tarball with =python setup.py sdist=
+ 2) commit and tag using the version string
 
- 3) Copy the tarball to the appropriate subdirectory under =/var/pypi=
+ 3) Produce a source tarball with =python setup.py sdist=
+
+ 4) Copy the tarball to the appropriate subdirectory under =/var/pypi=
 
 
 
