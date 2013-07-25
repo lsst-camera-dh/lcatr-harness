@@ -178,6 +178,7 @@ class Job(object):
         if os.path.exists(dst):
             util.log.warning('Directory already staged: "%s"' % dst)
             return dst
+        os.makedirs(dst)
 
         util.log.info('Staging from "%s" to "%s' % (src, dst))
         rstat = remote.stat(rpath, host=self.cfg.archive_host, user=self.cfg.archive_user)
@@ -185,7 +186,11 @@ class Job(object):
             msg = 'Failed to stat remote archive directory: %s' % src
             raise RuntimeError, msg
 
-        remote.rsync(src,dst)
+        dst = os.path.dirname(dst)
+        ret = remote.rsync(src,dst)
+        if ret[0]:
+            raise RuntimeError, 'Stage in failed with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret
+
         return dst
 
     def do_stage(self):
