@@ -8,6 +8,10 @@ import os
 from lcatr.harness import remote, environment, lims, util
 import lcatr.schema
 
+def log_and_terminal(out):
+    print out
+    util.log.info(out)
+
 class Job(object):
     '''
     Encapsulate a job.
@@ -223,16 +227,17 @@ class Job(object):
         os.chdir(wd)
         return
 
+
     def do_produce(self):
         self.go_working_dir()
         #out = util.file_logger('producer')
-        self.em.execute(self.em.lcatr_producer, out=util.log.info)
+        self.em.execute(self.em.lcatr_producer, out=log_and_terminal)
         return
 
     def do_validate(self):
         self.go_working_dir()
         #out = util.file_logger('validator')
-        self.em.execute(self.em.lcatr_validator, out=util.log.info)
+        self.em.execute(self.em.lcatr_validator, out=log_and_terminal)
         self.followup_validation()
         return
 
