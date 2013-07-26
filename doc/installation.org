@@ -102,7 +102,7 @@ This section is for Job Harness developers.  To prepare a release:
 
  4) Copy the tarball to the appropriate subdirectory under =/var/pypi=
 
-
+ 5) Deploy it
 
 * Test Station and Analysis Software Installation Requirements
 

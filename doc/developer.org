@@ -87,6 +87,12 @@ $ ./job-harness-shell
 (jh)$ exit
 #+END_EXAMPLE
 
+On RACF one can start the job harness shell like:
+
+#+BEGIN_EXAMPLE
+~bvastro/lcatr/job-harness-shell
+#+END_EXAMPLE
+
 After running =job-harness-shell= you may notice your prompt now has a =(jh)= prepended to indicate a sub-shell was started.  At this point you can run the Job Harness with the =--help= flag to see its help page.  When done using the harness you can =exit= the shell and drop back to your normal one.
 
 ** The archive key
@@ -168,6 +174,143 @@ Once the above has been set up you should be able to run your job software's =pr
 
 Any and all of these options may be placed in the =~/.lcatr.cfg= file.  The command line will override them.
 
+
+
+* Use Python Packages
+
+When your test station or analysis job is written in Python it is best to put virtually all of your code inside a Python /package/.  This will best assure that it runs the same in your development and production environments and minimize the amount of external environment that needs to be correct.
+
+Here, the term Python /package/ means something specific in Python (and will be italicized here) and should not be confused with the more general usage in the context of the greater Job Harness system.  
+
+The examples continue the assumption that your job is named "analyze" and all examples assume you have =cd='ed into your code directory (which was =analyze/devel/= in the previous section).  It is also assumed that you are working in the sub-shell started by running =job-harness-shell=.
+
+** Make your Python /package/ directory
+
+A Python /package/ is really nothing more than a directory with an =__init__.py= file (which may even be empty) marking the directory as such.  There is flexibility in where you make this directory.  During development we will let Python locate it by adjusting the =PYTHONPATH= environment variable.  In a production context Python will locate it because it will get installed in Python's =site-packages= system area.
+
+Make the (initially) empty =analyze= /package/:
+
+#+BEGIN_SRC sh :results silent :exports code
+mkdir analyze
+touch analyze/__init__.py
+#+END_SRC
+
+Let Python find this /package/ in your development environment.  You should still be in the directory holding your source (eg. =analyze/devel/=) when you issue this command as the output of =pwd= is used to set the directory:
+
+#+BEGIN_SRC sh :eval no
+export PYTHONPATH=`pwd`
+#+END_SRC
+
+Note, the =pwd= command is surrounded by backtick quotes.
+
+You can now test that this Python package is correct right from the shell command line:
+
+#+BEGIN_SRC sh :results output replace :exports both
+python -c 'import analyze'
+echo $?
+#+END_SRC
+
+#+RESULTS:
+: 0
+
+You should get no errors
+
+** Adding modules to your Python /package/
+
+Now you are all ready to add code into your Python /package/ directory.  Every file you make under =analyze/= will result in a Python module that can be accessed in Python code after the Python =import= operator is used.  Here we make a trivial example module by just =echo='ing a line of Python code into a file from the shell:
+
+#+BEGIN_SRC sh :results silent
+echo 'print "Hello World"' > analyze/hello.py
+#+END_SRC
+
+The =analyze/hello.py= file has just this one line, you would of course use an editor to place something more substantial:
+
+#+BEGIN_SRC python :eval no 
+print "Hello World"
+#+END_SRC
+
+Here is how you would use the module from some other Python code
+
+#+BEGIN_SRC python :results output :exports both
+import analyze.hello
+#+END_SRC
+
+#+RESULTS:
+: Hello World
+
+The second line shows the result you should see when you execute the Python code. 
+
+Normally you would not place top-level code in a Python module file.  Here is a second example where a function is defined:
+
+#+BEGIN_SRC sh :results none
+echo 'def say(): print "Bye"' > analyze/goodbye.py
+#+END_SRC
+
+Then it may be used like:
+
+#+BEGIN_SRC python :results output
+  from analyze import goodbye
+  def myfun():
+      goodbye.say()
+  myfun()
+#+END_SRC
+
+#+RESULTS:
+: Bye
+
+Or, you can import individual functions or classes from their module like:
+
+#+BEGIN_SRC python :results output
+  from analyze.goodbye import say
+  say()
+#+END_SRC
+
+#+RESULTS:
+: Bye
+
+Continue to build up your Python /package/ by adding code or more Python files to the =analyze/= directory.  Sub-modules, for example =analyze.tools= can also be made:
+
+#+BEGIN_SRC sh :results output replace :exports both
+mkdir analyze/tools
+touch analyze/tools/__init__.py
+echo 'print "I am a tool sub-module"' > analyze/tools/sometool.py
+python -c 'from analyze.tools import sometool'
+echo
+echo 'The Python package layout is now:'
+echo
+ls -R analyze
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+I am a tool sub-module
+
+The Python package layout is now:
+
+analyze:
+goodbye.py
+goodbye.pyc
+hello.py
+hello.pyc
+__init__.py
+__init__.pyc
+tools
+
+analyze/tools:
+__init__.py
+__init__.pyc
+sometool.py
+sometool.pyc
+#+end_example
+
+** Main producer/validator scripts
+
+With a well organized Python /package/ your main /producer/ and /validator/ scripts that the Job Harness calls may become very trivial.  For example the producer might be just:
+
+#+BEGIN_SRC python :eval no 
+from analyze import producer
+producer.run()
+#+END_SRC
 
 
 * Introduction to the rest
@@ -253,6 +396,7 @@ not encode timestamps, CCD IDs, version strings, etc as these are
 reflected by the job harness in the output directory path and are
 recorded to the LIMS database.  Encoding this information makes it
 more difficult for downstream processing to locate input files.
+
 
 * Two main programs
 
