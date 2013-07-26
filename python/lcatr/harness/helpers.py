@@ -23,14 +23,15 @@ def dependency_glob(pattern, jobname = None, paths = None):
     if not paths:
         paths = os.environ.get('LCATR_DEPENDENCY_PATH')
     if not paths: return
-    if isinstance(paths, str): 
+    if isinstance(paths, basestring): 
         paths = paths.split(':')
         
+    ret = list()
     for path in paths:
         if jobname and not '/'+jobname+'/' in path: # kind of a cheat
             continue
         hit = glob(os.path.join(path,pattern))
         if hit:
-            return hit
+            ret += hit
         continue
-    return
+    return ret
