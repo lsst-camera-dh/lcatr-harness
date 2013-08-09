@@ -2,32 +2,20 @@
 #+SETUPFILE: setup.org
 
 
-The LCATR job harness communicates with LIMS in order to register job
-parameters, allocate job identifiers, provide status updates and
-upload result summaries.  This document describes their communication
-interface.
+The LCATR job harness communicates with LIMS in order to register job parameters, allocate job identifiers, provide status updates and upload result summaries.  Communication with LIMS is also required for registering and later retrieval of job result summary schema.  This document describes the communication interface.
 
 * Communication
 
-All communication is initiated by a query from the harness in the form
-of an HTTP POST.  Any GET method is not specified here.  The queried
-URL ends in =/Results/<command>=.  All POST data uses a single keyword
-=jsonObject= and a value which is a JSON-encoded string.  All
-responses, including errors, from LIMS are of a MIME type
-=application/json= and contain a JSON-encoded string.  The form of the
-JSON strings in a POST query and their return are described for each
-command below.  A successful HTTP query will be indicated with the
-usual code 200 and this is independent of any potential
-application-level logic errors.
+All communication is initiated by a query from the client (harness) in the form of an HTTP POST.  Any GET methods are not specified here.  There are two sets of commands and each set is rooted in a base URL:
 
-* Commands
+ - =/Results/<command>= :: for job related commands/queries
+ - =/Schema/<command>= :: for schema related commands/queries
 
-There are three LIMS commands that the job harness calls.  One for
-registering a new job, one for updating its status and one for
-uploading a summary of its results.  For each command there is
-specified a query data structure and either nominal return and
-exceptional data structures.  These data structures are, at top level,
-in the form of a dictionary.
+All POST data uses a single keyword =jsonObject= and a value which is a JSON-encoded string.  All responses, including errors, from LIMS are of a MIME type =application/json= and contain a JSON-encoded string.  The form of the JSON strings in a POST query and their return are described for each command below.  A successful HTTP query will be indicated with the usual code 200 and this is independent of any potential application-level logic errors.
+
+* Job Related
+
+There are three LIMS commands related to running a job which the job harness calls.  One for registering a new job, one for updating its status and one for uploading a summary of its results.  For each command there is specified a query data structure and either nominal return and exceptional data structures.  These data structures are, at top level, in the form of a dictionary.
 
 ** Common
 
@@ -193,3 +181,30 @@ with the =result= key in the prior =ingest= command.
 
 
 
+
+* Result Summary Schema Related
+
+The LIMS commands related to job result summary schema are described in this section.
+
+** Registration
+
+Before any result summary that follows a particular schema may be accepted to LIMS the schema that describes the result must first be registered.  This is done with the LIMS =register= command.  The query consists of a single parameter:
+
+ - =schema= :: a list of schema dictionaries 
+
+Schema representation is described in the [[./schema.org][LCATR Schema]] document.  Note, only schema descriptions in JSON representation is allowed.
+
+** Retrieve all
+
+All registered schema descriptions can be retrieved with the =all= command which takes no parameters.  The value returned is =schema= and is a list of the requested schema
+.
+** Individual Retrieval
+
+Registered schema descriptions can be retrieved with the =retrieve= command.  The query consists of a list of dictionaries held in the =match= parameter, each element of the list is a dictionary with the following parameters:
+
+ - =name= :: the schema name (required)
+ - =version= :: the schema version (optional)
+
+If the =version= is not specified the highest (assuming lexical ordered) version is returned.
+
+The value returned is a dictionary with the key =schema= pointing to a list of the requested schema.

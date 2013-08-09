@@ -467,6 +467,26 @@ will help you search for a files matching a pattern in this path.
       # ...
 #+END_SRC
 
+You can test this outside of the harness by doing the following:
+
+#+BEGIN_SRC sh :eval no
+# fake what the harness provides
+$ export LCATR_DEPENDENCY_PATH="/data/bvastro/stage_root/CCD/112-04/TS3-Fe55/devel/28:/data/bvastro/stage_root/CCD/112-04/TS3-QE/devel/23:/data/bvastro/stage_root/CCD/112-04/TS3-i_dark/v1/24:/data/bvastro/stage_root/CCD/112-04/TS3-PTCmono/v1/25"
+$ python
+>>> from lcatr.harness.helpers import dependency_glob
+>>> print '\n'.join(dependency_glob("*.fits"))
+#+END_SRC
+
+Note: the pattern very much must match the file layout.  For early data copied by the "real fake" TS3 jobs you would use something like:
+
+#+BEGIN_SRC python :eval no
+for everyfile in dependency_glob('*/*.fits'):
+    print everyfile
+for just_qe in dependency_glob('*/*.fits','TS3-QE'):
+    print just_qe
+#+END_SRC
+
+
 ** Finding the CCD ID
 
 You tell the job harness which CCD ID is being run with the =--unit-id= command line flag (or equivalent configuration file variable) and it then tells your job via the =LCATR_UNIT_ID= environment variable.  Here is how your Python code can get this information:
