@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+'''
+Release management for an LCATR package.  
+
+It assumes to be run from top-level of the package source.
+'''
+
+import os
+from subprocess import check_call
+from pkg_resources import parse_version
+
+
+default_git_remote = 'central'
+
+
+def find_srcdir():
+    pkgdir = os.path.realpath('.')
+    pkgname = os.path.basename(pkgdir)
+
+    if os.path.exists(pkgname):
+        return pkgname
+    if os.path.exists('python'):
+        for root,dirs,files in os.walk('python'):
+            if pkgname != os.path.basename(root):
+                continue
+            if not os.path.exists(os.path.join(root, '__init__.py')):
+                continue
+            return root
+    return 
+
+
+def get_version():
+    return open('VERSION').read().strip()
+
+def bump_version(version_string):
+    old_version = get_version()
+    ov = parse_version(old_version)
+    nv = parse_version(version_string)
+
+    assert nv > ov, 'New version not newer: %s < %s' % (version_string, old_version)
+
+
+
+    with open('VERSION','w') as fd:
+        fd.write(version_string + '\n')
+        
+    srcdir = find_srcdir()
+    if not srcdir: return
+
+    with open(os.path.join(srcdir, 'version.py'),'w') as fp:
+        fp.write('#!/usr/bin/env python\n')
+        fp.write('__version__ = "%s"\n' % version_string)
+    return
+
+def commit_and_tag():
+    cmd = ['git', 'commit', '-a','-m', "Release %s" % get_version()]
+    check_call(cmd)
+    cmd = 'git tag %s' % get_version()
+    check_call(cmd.split())
+
+def git_push():
+    for what in 'all tags'.split():
+        cmd = 'git push --%s' % (what, )
+        check_call(cmd.split())
+
+def make_sdist():
+    cmd = 'python setup.py sdist'
+    check_call(cmd.split())
+
+
+def release(version):
+    bump_version(version)
+    git_commit()
+    git_tag()
+    git_push()
+    make_sdist()
+
+
+if '__main__' == __name__:
+    import sys
+    meth = eval(sys.argv[1])
+    res = meth(*sys.argv[2:])
+    if res:
+        print res
+
