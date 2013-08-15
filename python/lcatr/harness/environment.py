@@ -198,7 +198,7 @@ class Modules(object):
         modpath += [self.install_area]
 
         self.env['MODULEPATH'] = ':'.join(modpath)
-        self.env['LCATR_MODULES'] = self.install_area + '/modulefiles'
+        self.env['LCATR_MODULES'] = self.install_area + '/share/modulefiles'
 
         return
 
