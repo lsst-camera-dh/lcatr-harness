@@ -58,22 +58,21 @@ def commit_and_tag():
     cmd = 'git tag %s' % get_version()
     check_call(cmd.split())
 
-def git_push():
+def push():
     for what in 'all tags'.split():
         cmd = 'git push --%s' % (what, )
         check_call(cmd.split())
 
-def make_sdist():
+def sdist():
     cmd = 'python setup.py sdist'
     check_call(cmd.split())
 
 
 def release(version):
     bump_version(version)
-    git_commit()
-    git_tag()
-    git_push()
-    make_sdist()
+    commit_and_tag()
+    push()
+    sdist()
 
 
 if '__main__' == __name__:
