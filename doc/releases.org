@@ -1,0 +1,70 @@
+#+TITLE: LCATR Releases
+#+SETUPFILE: setup.org
+
+* Overview
+
+Releases of the LCATR software itself (harness, schema, modulefiles) are made as described in this document.
+
+* Release Steps
+
+The major parts of making a release are:
+
+ - set version in the =VERSION= file
+ - commit, tag and push
+ - run =sdist= and copy dist tar files to PyPI 
+ 
+* Versions
+
+** Releases
+
+Released versions are labeled like of the form of a two part number: =X.Y=.  
+
+** Release candidates
+
+Release candidates are labeled like =X.Y-rcZ= and are considered at a lower version than the eventual =X.Y= release.  The =Z= counts up starting at 0.  
+
+Tagged release candidates tag the initial commit of that line of development.  Any packages carrying a release candidate variable may correspond to any development starting at this tag and continuing up to but not including the next release candidate or full release tag.
+
+** Development
+
+After a full release (=X.Y=) has been made the =Y= number is incremented (unless a major release was just made) and =Z= is set to =0=.
+
+
+* Release management
+
+The script =lcatr-release= is used to manage releases.
+
+#+BEGIN_EXAMPLE
+$ ./scripts/lcatr-release release <version>
+#+END_EXAMPLE
+
+Or, in steps:
+
+#+BEGIN_EXAMPLE
+$ ./scripts/lcatr-release get_version
+$ ./scripts/lcatr-release bump_version 0.2rc-6
+$ ./scripts/lcatr-release commit_and_tag
+$ ./scripts/lcatr-release push
+$ ./scripts/lcatr-release sdist
+#+END_EXAMPLE
+
+** Example:
+
+Release
+
+#+BEGIN_EXAMPLE
+$ ./scripts/lcatr-release release 0.3
+#+END_EXAMPLE
+
+Start work towards next release
+
+#+BEGIN_EXAMPLE
+$ ./scripts/lcatr-release bump_version 0.4-rc0
+# 10:
+$ emacs *.py                      # develop
+$ git commit -a -m "..."
+$ ./scripts/lcatr-release push
+$ ./scripts/lcatr-release sdist   # optional/periodic
+# Goto 10 until happy
+$ ./scripts/lcatr-release release 0.4-rc0
+#+END_EXAMPLE

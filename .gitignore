@@ -11,3 +11,8 @@
 *.snm
 *.toc
 *.fdb_latexmk
+*.png
+*.ps
+*.svg
+*.cut*
+test_fakelims.db

@@ -37,9 +37,11 @@ def bump_version(version_string):
     ov = parse_version(old_version)
     nv = parse_version(version_string)
 
+    if nv == ov:
+        print 'Already at version "%s"' % old_version
+        return
+
     assert nv > ov, 'New version not newer: %s < %s' % (version_string, old_version)
-
-
 
     with open('VERSION','w') as fd:
         fd.write(version_string + '\n')
@@ -53,9 +55,15 @@ def bump_version(version_string):
     return
 
 def commit_and_tag():
-    cmd = ['git', 'commit', '-a','-m', "Release %s" % get_version()]
+    ver = get_version()
+    if '-' in ver:
+        msg = "Start release candidate %s" % ver
+    else:
+        msg = "Release %s" % ver
+
+    cmd = ['git', 'commit', '-a','-m', msg]
     check_call(cmd)
-    cmd = 'git tag %s' % get_version()
+    cmd = 'git tag %s' % ver
     check_call(cmd.split())
 
 def push():
