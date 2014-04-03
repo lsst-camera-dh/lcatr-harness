@@ -184,9 +184,6 @@ perform the following tasks:
  - Produce one or more /result summary/ files (see note on 
    "[[./schema.org][LCATR Schema]]")
 
- - Produce a single /meta data/ file (see same note) with the name of
-   =metadata.fits=.
-
 Standard output and error are logged.  If the returns a failure code
 (non-zero) the harness aborts.
 
