@@ -65,7 +65,7 @@ class Config(object):
         'unit_type',    # type of unit (eg, CCD/RTM)
         'unit_id',      # The unique unit identifier
         'job_id',       # The unique job identifer
-        'lims_url',     # The URL of the LIMS web service
+        'lims_url',     # The URL of the LIMS/eTraveler web service
         'install_area', # base to where software is installed
 
         'modules_home',         # guessed 
@@ -74,6 +74,24 @@ class Config(object):
         'modules_path',         # module
         ]
 
+    # For iterator script, only container_id and lims_url must be provided.
+    # Others come from 'implicit' list
+    # COULD also include unit_type, unit_id here.  But eTraveler already
+    # includes in each command line it will send iterator.
+    required_iterator_parameters = [
+        'host',  # the name of the host machine running the job
+        'operator',   # User name of person operating/running the test
+        'stamp',      # A time_t seconds stamping when job ran
+        'stage_root',   # The LCATR_ROOT on local machine
+        'install_area', # base to where software is installed
+        'modules_home',         # guessed 
+        'modules_version',      # by the
+        'modules_cmd',          # environment
+        'modules_path',         # module
+        'container_id', # activity id of container process
+        'lims_url',     # URL of eTraveler web service
+        ]
+  
     # These are not interpreted directly but can be useful for
     # organizing configuration files
     auxiliary_parameters = [

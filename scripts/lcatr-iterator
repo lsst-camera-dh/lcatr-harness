@@ -1,0 +1,9 @@
+#!/u1/jrb/local-JH/lcatr/bin/python2
+'''
+The LCATR job harness iterator
+'''
+
+import sys
+from lcatr.harness import automain
+automain.cmdline(sys.argv[1:])
+

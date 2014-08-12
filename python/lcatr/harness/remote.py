@@ -8,7 +8,7 @@ import os
 import subprocess
 from util import log
 
-ssh_command = "ssh"             # rely on it being in PATH
+ssh_command = "ssh -x"             # rely on it being in PATH
 
 def command(cmdstr):
     '''
