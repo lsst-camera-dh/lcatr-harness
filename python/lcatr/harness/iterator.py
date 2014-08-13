@@ -62,7 +62,7 @@ class Iterator(object):
             url += '/' + self.API['base_path']
         url += '/'
         url += command
-        #  or should we append nextJob later?
+
         self.et_url = url
         log.info('Using eTraveler URL: "%s"' % url)
         query = self.makeParams('nextJob', **self.cfg.__dict__)
@@ -147,14 +147,16 @@ class Iterator(object):
         self.getReady()
         more = True;
         while more:
-            #res = self.doQuery()
-            res = self.doFakeQuery()
+            res = self.doQuery()
+            #res = self.doFakeQuery()
             if res['status'] == 'DONE':
                 more = False
                 return;
             if res['status'] == 'CMD':
                 more = True
-                self.em.execute(res['command'])
+                # json data seems to be returned in something
+                # which str.split() doesn't handle well
+                self.em.execute((res['command']).encode('ascii'))
             else:
                 more = False
                 # log error?

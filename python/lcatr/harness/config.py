@@ -213,7 +213,7 @@ class Config(object):
         return self.modules_home
 
     def guess_modules_version(self):
-        if hasattr(self,'modules_version'): return self.modules_versiong
+        if hasattr(self,'modules_version'): return self.modules_version
         self.modules_version = environment.guess_modules_version()
         return self.modules_version
 
