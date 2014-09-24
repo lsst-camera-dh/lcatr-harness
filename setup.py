@@ -9,9 +9,11 @@ setup(name='lcatr-harness',
       url='https://git.racf.bnl.gov/astro/cgit/lcatr/harness.git',
       author='Brett Viren',
       author_email='bv@bnl.gov',
+      maintainer='Joanne Bogart',
+      maintainer_email='jrb@slac.stanford.edu',
       package_dir = {'': 'python'},
       packages = ['lcatr.harness'],
-      scripts = ['scripts/lcatr-harness'],
+      scripts = ['scripts/lcatr-harness', 'scripts/lcatr-iterator'],
       data_files = [ 
         ('doc',glob('doc/*.org')),
         ('tests', glob('tests/test_*.py') \
