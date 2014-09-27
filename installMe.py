@@ -14,12 +14,14 @@ import glob
 parser = argparse.ArgumentParser(description='install lcatr/harness')
 parser.add_argument('jhRoot', action='store', metavar='root',
                     help='Root of job harness installation')
-parser.add_argument('--package', '-p', action='store', dest = 'pkg',
-                    default='lcatr/harness')
+parser.add_argument('--update', '-u', action='store_true', dest = 'update',
+                    default=False,
+                    help='allow overwrite of existing installation')
 args = parser.parse_args()
 
 jhRoot = vars(args)['jhRoot']
-pkg = vars(args)['pkg']
+update = vars(args)['update']
+pkg = 'lcatr/harness'
 
 pythonversion = 'python' + str(sys.version_info.major) + '.' + str(sys.version_info.minor)
 sitePkgs = os.path.join(jhRoot, 'lib', pythonversion, 'site-packages')
@@ -32,9 +34,14 @@ pkgtop = os.path.dirname(sys.argv[0])
 installedTop = os.path.join(sitePkgs, pkg)
 
 if os.path.isfile(os.path.join(installedTop, '__init__.py')):
-    print 'Some version of the package is already installed'
-    print 'Delete or move away before attempting new install'
-    exit
+    if not update:
+        print 'Some version of the package is already installed'
+        print 'Delete or move away before attempting new install'
+        print 'or re-invoke with --update option'
+        exit
+    else:
+        shutil.rmtree(installedTop)
+        print 'Old python files removed. Overwriting old version'
 
 if not os.path.isdir(os.path.join(jhRoot, 'doc')):
     os.mkdir(os.path.join(jhRoot, 'doc'))
