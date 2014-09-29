@@ -82,6 +82,10 @@ def release(version):
     push()
     sdist()
 
+def release_no_sdist(version):
+    bump_version(version)
+    commit_and_tag()
+    push()
 
 if '__main__' == __name__:
     import sys
