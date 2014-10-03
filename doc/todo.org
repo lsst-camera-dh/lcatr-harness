@@ -1,0 +1,54 @@
+* Open issues
+
+ - Will jobs need input parameters that change more frequently than software releases
+   - Probably yes
+   - Provide for passing command line arguments through harness to jobs, capture them in the LIMS job registration table.
+
+* Harness
+
+** Integration with LIMS
+
+ - finalize what information is exchanged
+   - mostly done
+   - need to add column to hold command line args
+
+ - develop the a test interface
+   - mostly done, =fakelims= in =lcatr/harness/tests=
+
+ - develop tests (needs at least "process traveler lite")
+   - initial test done using 3 example jobs under the =jobs/-= area in repo
+
+** Jobs
+
+ - make sure a failed job is reported to LIMS
+
+ - if --job-id is given on command line, don't hit lims
+
+ - "real fake" job suite that has on dependency producing output used as input for another
+   - done, 3 examples in =jobs/=
+
+ - integrate Jim Frank's code and a "fake" station that prepare Harvard data in a consistent form
+
+* LIMS
+
+ - modify existing harness interface to meet agreed one
+   - in progress
+
+ - dependency graph (aka inversion of process traveler)
+   - needed before full-system test possible
+   - actual content needs input from test developers
+   - in conceptual stage
+
+* BNL
+
+ - Identify (test/devel) base for archive file system and its access host
+ - Identify initial targets for "harnessing"
+   - choose canonical job names
+   - determine job dependencies
+   - work out summary info schema
+   - write harness "shim" scripts
+ - Generate and install SSH key pairs for each job (on job and archive hosts)
+ - Make test/devel LIMS instance visible from initial test hosts
+ - Install harness + test software on test hosts
+ - Run, debug and fill any gaps
+

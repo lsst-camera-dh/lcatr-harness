@@ -1,0 +1,25 @@
+#+TITLE: LCATR Roles
+#+SETUPFILE: setup.org
+
+Roles and their responsibilities of individuals participating in the LCATR system.
+
+* Operator
+
+Runs a job.
+
+* Software Developer
+
+Develops CCD/RTM test or analysis jobs.  Makes releases of their
+software.  Assures that their software complies with the LCATR
+requirements.
+
+* Software Manager
+
+Installs released software on based on version string communicated
+from a software developer.  Performs validation on these
+installations.
+
+* Repository Administrator
+
+Creates new git repositories in the (RACF /cgit/) server.
+
