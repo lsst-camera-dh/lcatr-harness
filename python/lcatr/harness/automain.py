@@ -42,31 +42,12 @@ def cmdline(args):
     kwds = {}
     for opt,arg in optarg.__dict__.iteritems():
         if not arg: continue
-        ##if opt == "steps":
-        ##    steps = arg
-        ##    continue
+
         kwds[opt] = arg
 
     cfg = config.Config(**kwds)
     it = iteratormod.Iterator(cfg)
     it.go()
-    
-    #for what in set(steps).intersection(non_job_steps):
-    #    steps.remove(what)
-    #    meth = eval('do_%s' % what)
-    #    msg = meth(cfg)
-    #    if msg:
-    #        parser.error(msg)
-    #    continue
-    
-    #job = jobmod.Job(cfg)
-
-    #if cfg.__dict__.has_key('job_id'):
-    #    print 'Rerun with steps: %s' % (', '.join(steps), )
-    #    job.rerun(steps)
-    #else:
-    #    job.run(steps)
-
 
 if '__main__' == __name__:
     it = cmdline(sys.argv[1:])

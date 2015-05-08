@@ -10,7 +10,7 @@ from subprocess import check_call
 from pkg_resources import parse_version
 
 
-default_git_remote = 'lsstcorp'
+default_git_remote = 'origin'
 
 
 def find_srcdir():

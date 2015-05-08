@@ -8,7 +8,7 @@ import json
 from urllib import urlencode
 from urllib2 import urlopen
 
-from util import log
+from util import log, log_and_terminal
 
 from lcatr.harness import environment
 
@@ -123,7 +123,7 @@ class Iterator(object):
             jres = json.loads(page)
         except ValueError, msg:
             msg = 'Failed to load return page with qdata="%s" url="%s" got: "%s" (JSON error: %s)' %\
-                (qdata, self.et_url, page, msg)
+                (self.qdata, self.et_url, page, msg)
             print msg
             log.error(msg)
             raise
@@ -146,17 +146,22 @@ class Iterator(object):
     def go(self):
         self.getReady()
         more = True;
+        iJob = 1
         while more:
             res = self.doQuery()
             #res = self.doFakeQuery()
             if res['status'] == 'DONE':
+                print 'All child jobs have been run'
                 more = False
                 return;
             if res['status'] == 'CMD':
                 more = True
                 # json data seems to be returned in something
                 # which str.split() doesn't handle well
-                self.em.execute((res['command']).encode('ascii'))
+                print "Begin execution of child job #", iJob
+                self.em.execute((res['command']).encode('ascii'), out=log_and_terminal)
+                print "Completed execution of child job #", iJob
+                iJob += 1
             else:
                 more = False
                 # log error?

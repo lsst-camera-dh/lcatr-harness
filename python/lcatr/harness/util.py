@@ -41,5 +41,8 @@ def file_logger(name, filename = None, level = logging.DEBUG):
     log.setLevel(level)
     return log
 
+def log_and_terminal(out):
+    print out
+    log.info(out)
 
 
