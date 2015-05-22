@@ -1,0 +1,53 @@
+#!/usr/bin/env python
+
+from wsgiref.simple_server import make_server
+import argparse
+import subprocess
+import urllib
+
+allowedOrigins = ['http://lsst-camera.slac.stanford.edu',
+                  'http://scalnx-v04:8180',
+                  'http://localhost:8084']
+port = 8888
+
+parser = argparse.ArgumentParser(description="Launch commands from the browser")
+parser.add_argument("--origin")
+parser.add_argument("--debug", action='store_true')
+args = parser.parse_args()
+
+if args.debug:
+    print args
+
+if args.origin is not None:
+    allowedOrigins.append(args.origin)
+
+def simple_app(environ, start_response):
+    if args.debug:
+        evs = environ.keys()
+        evs.sort()
+        for ev in evs:
+            print ev, environ[ev]
+            
+    if 'HTTP_ORIGIN' not in environ or environ['HTTP_ORIGIN'] not in allowedOrigins or environ['REMOTE_HOST']!='localhost':
+      status = '404 Forbidden'
+      headers = [('Content-type', 'text/plain')]
+      start_response(status, headers)
+      return "Go away!"
+    
+    status = '200 OK'
+    headers = [('Content-type', 'text/plain'),
+               ('Access-Control-Allow-Origin', environ['HTTP_ORIGIN'])]
+    
+    command = urllib.unquote(environ['QUERY_STRING']) 
+    return_code = subprocess.call(command, shell=True)  
+    start_response(status, headers)
+    if return_code==0:
+       return "Success"
+    else: 
+       return "Failed (rc=%d)" % return_code
+
+httpd = make_server('', port, simple_app)
+print "Serving on port %s..." % port
+httpd.serve_forever()
+        
+
