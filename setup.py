@@ -13,7 +13,8 @@ setup(name='lcatr-harness',
       maintainer_email='jrb@slac.stanford.edu',
       package_dir = {'': 'python'},
       packages = ['lcatr.harness'],
-      scripts = ['scripts/lcatr-harness', 'scripts/lcatr-iterator'],
+      scripts = ['scripts/lcatr-harness', 'scripts/lcatr-iterator', 
+                 'scripts/lcatr-launcher'],
       data_files = [ 
         ('doc',glob('doc/*.org')),
         ('tests', glob('tests/test_*.py') \

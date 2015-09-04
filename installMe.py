@@ -53,6 +53,8 @@ shutil.copy(os.path.join(pkgtop, 'scripts/lcatr-harness'),
             os.path.join(jhRoot, 'bin'))
 shutil.copy(os.path.join(pkgtop, 'scripts/lcatr-iterator'), 
             os.path.join(jhRoot, 'bin'))
+shutil.copy(os.path.join(pkgtop, 'scripts/lcatr-launcher'), 
+            os.path.join(jhRoot, 'bin'))
 
 docs = glob.glob(os.path.join(pkgtop, 'doc/*.org'))
 for doc in docs:
@@ -61,8 +63,3 @@ for doc in docs:
 srcs = glob.glob(os.path.join(pkgtop, 'python/lcatr/harness/*.py'))
 for src in srcs:
     shutil.copy(src, installedTop)
-
-
-
-
-
