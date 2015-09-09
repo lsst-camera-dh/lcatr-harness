@@ -262,7 +262,34 @@ class Job(object):
 
         self._check_archive()
 
+        to_archive = 'to_archive'
         src = self.cfg.subdir('stage') + '/'
+        # make a to-archive subdirectory.
+        if os.path.exists(to_archive):
+            raise RuntimeError, 'to-archive subdirectory in staging area already exists'
+        new_src = os.makedirs(to_archive)
+        # self.result is a list of dicts
+        #  Assume it's well-formed by our lights, or we never should have
+        #  gotten this far
+        for d in self.result:
+            if d['schema_name'] == 'fileref':
+                path = d['path']
+                (dirn, basen) = os.path.split(path)
+                destdir = to_archive
+                if len(dirn) > 0:
+                    destdir = os.path.join(to_archive, dirn)
+                    if !os.path.exists(destdir):
+                        os.makedirs(destdir)
+                os.link(path, os.path.join(destdir, basen))
+        os.link('summary.lims', os.path.join(to_archive, 'summary.lims')
+                
+        #   parse self.result as follows:
+        #   it's a list of dicts, so for each dict
+        #     if schema_name key has value 'fileref'
+        #     look up value of 'path'
+        #     make hard link for this path under to-archive
+        # if all this works, replace src by src + 'to-archive/'
+
         dst = self.cfg.s('%(archive_user)s@%(archive_host)s:')
         dst += self.cfg.subdir('archive') + '/'
         
@@ -277,9 +304,9 @@ class Job(object):
         if ret[0]:
             raise RuntimeError, \
                 'Failed to make archive directory with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret
-
-        util.log.info('Archiving from "%s" to "%s' % (src, dst))
-        ret = remote.rsync(src,dst)
+        new_src += '/'
+        util.log.info('Archiving from "%s" to "%s' % (new_src, dst))
+        ret = remote.rsync(new_src,dst)
         if ret[0]:
             raise RuntimeError, 'Archive failed with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret
         return
