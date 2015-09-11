@@ -283,13 +283,6 @@ class Job(object):
                 os.link(path, os.path.join(destdir, basen))
         os.link('summary.lims', os.path.join(to_archive, 'summary.lims')
                 
-        #   parse self.result as follows:
-        #   it's a list of dicts, so for each dict
-        #     if schema_name key has value 'fileref'
-        #     look up value of 'path'
-        #     make hard link for this path under to-archive
-        # if all this works, replace src by src + 'to-archive/'
-
         dst = self.cfg.s('%(archive_user)s@%(archive_host)s:')
         dst += self.cfg.subdir('archive') + '/'
         
@@ -309,6 +302,7 @@ class Job(object):
         ret = remote.rsync(new_src,dst)
         if ret[0]:
             raise RuntimeError, 'Archive failed with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret
+        ## If it works, clean up with  shutil.rmtree(to_archive)
         return
     
     def do_ingest(self):
