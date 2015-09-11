@@ -267,7 +267,8 @@ class Job(object):
         # make a to-archive subdirectory.
         if os.path.exists(to_archive):
             raise RuntimeError, 'to-archive subdirectory in staging area already exists'
-        new_src = os.makedirs(to_archive)
+	os.makedirs(to_archive)
+        new_src = src + to_archive + '/'
         # self.result is a list of dicts
         #  Assume it's well-formed by our lights, or we never should have
         #  gotten this far
@@ -278,10 +279,10 @@ class Job(object):
                 destdir = to_archive
                 if len(dirn) > 0:
                     destdir = os.path.join(to_archive, dirn)
-                    if !os.path.exists(destdir):
+                    if not os.path.exists(destdir):
                         os.makedirs(destdir)
                 os.link(path, os.path.join(destdir, basen))
-        os.link('summary.lims', os.path.join(to_archive, 'summary.lims')
+        os.link('summary.lims', os.path.join(to_archive, 'summary.lims'))
                 
         dst = self.cfg.s('%(archive_user)s@%(archive_host)s:')
         dst += self.cfg.subdir('archive') + '/'
@@ -297,7 +298,6 @@ class Job(object):
         if ret[0]:
             raise RuntimeError, \
                 'Failed to make archive directory with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret
-        new_src += '/'
         util.log.info('Archiving from "%s" to "%s' % (new_src, dst))
         ret = remote.rsync(new_src,dst)
         if ret[0]:
