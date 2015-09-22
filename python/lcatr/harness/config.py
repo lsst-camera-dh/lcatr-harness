@@ -268,6 +268,12 @@ class Config(object):
         s = Config.subdir_policy % self.__dict__
         return prefix + s
 
+    def archivelogdir(self):
+        '''
+        Construct and return log dir under archive root
+        '''
+        return self.archive_root + '/logs'
+
 
     def archive_rsync_path(self):
         '''

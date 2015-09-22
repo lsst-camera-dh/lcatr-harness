@@ -5,41 +5,84 @@ General utility stuff
 
 import logging
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
+import datetime
+import string
+import os
 
-# Set up general, lcatr.harness-wide log
-def _setlog(level):
-    name = 'lcatr_harness'
-    filename = name + '.log'
-    l = logging.getLogger(name)
+class MovableLogger(object):
+    '''
+    Provide service to move log to a new location
+    '''
+    def __init__(self, name='lcatr_harness', level=logging.DEBUG, path=None):
+        self.filepath = path;
+        self.level = level
+        if self.filepath==None:
+            now_iso = datetime.datetime.now().isoformat()
+            now_iso = string.join(string.split(now_iso, ':'), '')
+            self.filepath = string.join(string.split(now_iso, '.'), 'us') + '.log'
 
-    fh = logging.FileHandler(filename)
-    l.addHandler(fh)
+        self.l = logging.getLogger(name)
 
-    fmt = logging.Formatter('%(asctime)s %(name)s(%(levelname)s) %(message)s')
-    fh.setFormatter(fmt)
+        self.fh = logging.FileHandler(self.filepath)
+        self.fmt = logging.Formatter('%(asctime)s %(name)s(%(levelname)s) %(message)s')
+        self.fh.setFormatter(self.fmt)
+        self.fh.setLevel(level)
 
-    l.setLevel(level)
+        self.l.addHandler(self.fh)
 
+        self.l.setLevel(level)
 
-    print 'logging to: %s' % filename
-    return l
+        print 'logging to: %s' % self.filepath
+        return
+
+    def flush_lf(self):
+        self.fh.flush();
+
+    def get_lfp(self):
+        return self.filepath
+
+    def move_lf(self, newpath):
+        self.fh.close()
+        self.l.removeHandler(self.fh)
+        os.rename(self.filepath, newpath)        
+        self.filepath = newpath
+        newfh = logging.FileHandler(newpath)
+        newfh.setFormatter(self.fmt)
+        newfh.setLevel(self.level)
+        self.l.addHandler(newfh)
+        self.fh = newfh
+
+    def debug(self, msg):
+        self.l.debug(msg)
+
+    def info(self, msg):
+        self.l.info(msg)
+
+    def warning(self, msg):
+        self.l.warning(msg)
+
+    def error(self, msg):
+        self.l.error(msg, args, kwargs)
+
+    def critical(self, msg):
+        self.l.critical(msg)
+
+    def log(self, lvl, msg):
+        self.l.log(lvl, msg)
+
 # fixme: change to INFO in production
-log = _setlog(logging.DEBUG)
+level = logging.DEBUG
+log = MovableLogger('lcatr_harness', level)
 
+def get_logfilepath():
+    return log.get_lfp()
 
+def move_logfile(newpath):
+    return log.move_lf(newpath)
 
-def file_logger(name, filename = None, level = logging.DEBUG):
-    '''
-    Make a logger to file of the given name.  If filename is not given
-    it is made by appending ".log" to the name.
-    '''
-    if not filename: 
-        filename = name + '.log'
-    log = logging.getLogger(name)
-    fh = logging.FileHandler(filename)
-    log.addHandler(fh)
-    log.setLevel(level)
-    return log
+def flush_logfile():
+    return log.flush_lf()
+
 
 def log_and_terminal(out):
     print out

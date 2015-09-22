@@ -309,7 +309,12 @@ class Modules(object):
             print msg
             log.error(msg)
             raise
-        
+
+    def update(self, d):
+       '''
+       Update env
+       '''
+       self.env.update(d)
 
     pass
 

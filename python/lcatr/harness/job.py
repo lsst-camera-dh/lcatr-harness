@@ -93,6 +93,9 @@ class Job(object):
                     if ret:
                         util.log.error(str(ret))
                         print str(ret)
+                ix = steps.index(step)
+                if (ix > steps.index('configure')) and (ix < steps.index('purge')):
+                    self._archive_log()
                 raise
             else:
                 msg = 'Step %s completed' % step
@@ -163,6 +166,10 @@ class Job(object):
         'Initial registering with lims.'
         self.lims = lims.register(**self.cfg.__dict__)
         self.cfg.job_id = self.lims.jobid
+        miniDict = {}
+        miniDict['LCATR_JOB_ID'] = self.lims.jobid
+        self.em.update(miniDict)
+        
         return
 
     def stage_in(self, **depinfo):
@@ -215,6 +222,11 @@ class Job(object):
         util.log.info('Creating working directory: %s' % wd)
         os.makedirs(wd)
 
+        (oldname, sep, oldtype) = util.get_logfilepath().partition('.')
+        newlog = wd + '/' + oldname + '_' + self.cfg.job_id + sep + oldtype
+        util.log.info('Moving log to: %s' % newlog)
+        util.move_logfile(newlog)
+
         self.em.env['LCATR_DEPENDENCY_PATH'] = ':'.join(deppath)
         return
 
@@ -245,15 +257,17 @@ class Job(object):
         self.result = lcatr.schema.validate_file()
         return
 
-    def _check_archive(self):
+    def _check_archive(self, logdir=None):
         '''
-        Peak to see if the archive exists.
+        Peek to see if the archive exists. Optionally look for logdir 
         '''
-        rstat = remote.stat(self.cfg.archive_root,
+        rdir =self.cfg.archive_root
+        if logdir != None: rdir = self.cfg.archivelogdir()
+        rstat = remote.stat(rdir,
                             host=self.cfg.archive_host, user=self.cfg.archive_user)
         if rstat[0]:
-            msg = 'Remote archive root does not exist: %s@%s:%s' % \
-                (self.cfg.archive_user, self.cfg.archive_host,self.cfg.archive_root)
+            msg = 'Remote archive root or logdir does not exist: %s@%s:%s' % \
+                (self.cfg.archive_user, self.cfg.archive_host,rdir)
             raise RuntimeError, msg
         return
 
@@ -312,6 +326,8 @@ class Job(object):
         ret = self.lims.ingest(self.result) # self.result filled in do_validate()
         if ret:
             raise RuntimeError, str(ret)
+        
+        self._archive_log()
         return
 
     def do_purge(self):
@@ -330,3 +346,22 @@ class Job(object):
         if not o: return False
         return True
 
+    def _archive_log(self):
+        # check if archive log dir already exists; trap error
+        try:
+            self._check_archive("log")
+        except RuntimeError:
+            util.log.info('Archive logs directory not found; attempt to create')
+            ret = remote.cmd('mkdir -p %s' % self.cfg.archivelogdir(),
+                             host=self.cfg.archive_host,
+                             user=self.cfg.archive_user)
+            if ret[0]: 
+                util.log.warning('Failed to make archive log dir with %d:\nOUPUT=\n%s\nERROR=\n%s' % ret)
+        
+        util.flush_logfile()
+        #  scp to archive
+        dst = self.cfg.s('%(archive_user)s@%(archive_host)s:')
+        dst += self.cfg.archivelogdir() + '/'
+        src = util.get_logfilepath()
+        cmdstr = "scp -p %s %s" % (src, dst)
+        return remote.command(cmdstr)
