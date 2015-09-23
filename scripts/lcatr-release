@@ -71,6 +71,11 @@ def push():
         cmd = 'git push --%s' % (what, )
         check_call(cmd.split())
 
+def push_origin_master():
+    for what in 'all tags'.split():
+        cmd = 'git push origin master --%s' % (what, )
+        check_call(cmd.split())
+
 def sdist():
     cmd = 'python setup.py sdist'
     check_call(cmd.split())
