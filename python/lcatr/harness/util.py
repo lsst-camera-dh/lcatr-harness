@@ -62,7 +62,7 @@ class MovableLogger(object):
         self.l.warning(msg)
 
     def error(self, msg):
-        self.l.error(msg, args, kwargs)
+        self.l.error(msg)
 
     def critical(self, msg):
         self.l.critical(msg)
