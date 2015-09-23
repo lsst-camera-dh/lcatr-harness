@@ -72,7 +72,6 @@ def push():
         check_call(cmd.split())
 
 def push_origin_master():
-    #for what in 'all tags'.split():
     cmd = 'git push --tags origin master'
     check_call(cmd.split())
 

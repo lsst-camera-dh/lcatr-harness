@@ -1,0 +1,31 @@
+See the file scripts/lcatr-release
+
+The following may be of interest
+
+1. scripts/lcatr-release bump_version <version-string>
+
+updates everything with embedded version string if necessary. Does nothing
+if it's already at requested version
+
+2. scripts/lcatr-release commit_and_tag
+
+does git commit -a (so commits all new, unstaged versions of files it
+already knows about; does not add new files)
+
+then tags with current version string
+
+3a. scripts/lcatr-release push   or
+3b. scripts/lcatr-release push_origin_master
+
+First pushes all commits and tags to origin; second pushes only along
+master branch
+
+4. scripts/lcatr-release release_no_sdist <version-string>
+
+Does 1, 2 and 3b in sequence.
+
+
+Convention for version-string is:
+for a real release,  integers separated by . (e.g. 2.0.4)
+for a candidate release, same as above but followed by -<somethng>, e.g.
+2.0.5-RC
