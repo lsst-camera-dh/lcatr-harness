@@ -73,7 +73,7 @@ def push():
 
 def push_origin_master():
     #for what in 'all tags'.split():
-    cmd = 'git push --tags origin master' % (what, )
+    cmd = 'git push --tags origin master'
     check_call(cmd.split())
 
 def sdist():
