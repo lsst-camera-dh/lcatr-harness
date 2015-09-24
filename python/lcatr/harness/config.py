@@ -270,7 +270,7 @@ class Config(object):
 
     def archivelogdir(self):
         '''
-        Construct and return log dir under archive root
+        Construct and return log root dir under archive root
         '''
         return self.archive_root + '/logs'
 

@@ -226,6 +226,7 @@ class Job(object):
         newlog = wd + '/' + oldname + '_' + self.cfg.job_id + sep + oldtype
         util.log.info('Moving log to: %s' % newlog)
         util.move_logfile(newlog)
+        print 'Moved log to ' + newlog
 
         self.em.env['LCATR_DEPENDENCY_PATH'] = ':'.join(deppath)
         return
@@ -259,10 +260,12 @@ class Job(object):
 
     def _check_archive(self, logdir=None):
         '''
-        Peek to see if the archive exists. Optionally look for logdir 
+        Peek to see if the archive exists. Optionally look for logdir.
+        If logdir argument is not empty string, it should start with
+        leading /
         '''
         rdir =self.cfg.archive_root
-        if logdir != None: rdir = self.cfg.archivelogdir()
+        if logdir != None: rdir = self.cfg.archivelogdir() + logdir
         rstat = remote.stat(rdir,
                             host=self.cfg.archive_host, user=self.cfg.archive_user)
         if rstat[0]:
@@ -348,11 +351,12 @@ class Job(object):
 
     def _archive_log(self):
         # check if archive log dir already exists; trap error
+        logdir= '/' + os.path.basename(util.get_logfilepath())[0:7]
         try:
-            self._check_archive("log")
+            self._check_archive(logdir)
         except RuntimeError:
             util.log.info('Archive logs directory not found; attempt to create')
-            ret = remote.cmd('mkdir -p %s' % self.cfg.archivelogdir(),
+            ret = remote.cmd('mkdir -p %s' % (self.cfg.archivelogdir()+logdir),
                              host=self.cfg.archive_host,
                              user=self.cfg.archive_user)
             if ret[0]: 
@@ -361,7 +365,7 @@ class Job(object):
         util.flush_logfile()
         #  scp to archive
         dst = self.cfg.s('%(archive_user)s@%(archive_host)s:')
-        dst += self.cfg.archivelogdir() + '/'
+        dst += self.cfg.archivelogdir() + logdir
         src = util.get_logfilepath()
         cmdstr = "scp -p %s %s" % (src, dst)
         return remote.command(cmdstr)
