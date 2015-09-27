@@ -165,9 +165,9 @@ class Job(object):
     def do_register(self):
         'Initial registering with lims.'
         self.lims = lims.register(**self.cfg.__dict__)
-        self.cfg.job_id = self.lims.jobid
+        self.cfg.job_id = str(self.lims.jobid)
         miniDict = {}
-        miniDict['LCATR_JOB_ID'] = self.lims.jobid
+        miniDict['LCATR_JOB_ID'] = str(self.lims.jobid)
         self.em.update(miniDict)
         
         return
