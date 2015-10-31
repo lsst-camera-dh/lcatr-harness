@@ -7,7 +7,7 @@ import logging
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 import datetime
 import string
-import os
+import shutil
 
 class MovableLogger(object):
     '''
@@ -44,7 +44,7 @@ class MovableLogger(object):
     def move_lf(self, newpath):
         self.fh.close()
         self.l.removeHandler(self.fh)
-        os.rename(self.filepath, newpath)        
+        shutil.move(self.filepath, newpath)        
         self.filepath = newpath
         newfh = logging.FileHandler(newpath)
         newfh.setFormatter(self.fmt)
