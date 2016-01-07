@@ -66,4 +66,14 @@ def rsync(src,dst):
     cmdstr = "rsync -a %s %s" % (src, dst)
     return command(cmdstr)
 
+def mkdir(target_dir, host, user):
+    '''
+    Execute mkdir on a remote <user>@<host> connection
+    '''
+    cmdstr = 'mkdir -p %s' % target_dir
+    return cmd(cmdstr, host, user)
+
+def scp(src, dst):
+    cmdstr = "scp -p %s %s" % (src, dst)
+    return command(cmdstr)
 

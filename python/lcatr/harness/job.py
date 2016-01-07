@@ -8,6 +8,11 @@ import os
 from lcatr.harness import remote, environment, lims, util
 import lcatr.schema
 
+if os.environ.get('IRODS_ARCHIVE') is None:
+    from lcatr.harness import remote
+else:
+    from lcatr.harness import remote_irods as remote
+    
 def log_and_terminal(out):
     print out
     util.log.info(out)
@@ -301,7 +306,10 @@ class Job(object):
                 os.link(path, os.path.join(destdir, basen))
         os.link('summary.lims', os.path.join(to_archive, 'summary.lims'))
                 
-        dst = self.cfg.s('%(archive_user)s@%(archive_host)s:')
+        if os.environ.get('IRODS_ARCHIVE') is not None:
+            dst = "i:"
+        else:
+            dst = self.cfg.s('%(archive_user)s@%(archive_host)s:')
         dst += self.cfg.subdir('archive') + '/'
         
         if self.archive_exists():
@@ -310,8 +318,9 @@ class Job(object):
 
 
         util.log.info('Making archive directory "%s' % dst)
-        ret = remote.cmd('mkdir -p %s' % self.cfg.subdir('archive'),
-                         host=self.cfg.archive_host, user=self.cfg.archive_user)
+        ret = remote.mkdir(self.cfg.subdir('archive'),
+                           self.cfg.archive_host, 
+                           self.cfg.archive_user)
         if ret[0]:
             raise RuntimeError, \
                 'Failed to make archive directory with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret
@@ -356,9 +365,9 @@ class Job(object):
             self._check_archive(logdir)
         except RuntimeError:
             util.log.info('Archive logs directory not found; attempt to create')
-            ret = remote.cmd('mkdir -p %s' % (self.cfg.archivelogdir()+logdir),
-                             host=self.cfg.archive_host,
-                             user=self.cfg.archive_user)
+            ret = remote.mkdir((self.cfg.archivelogdir()+logdir),
+                               self.cfg.archive_host,
+                               self.cfg.archive_user)
             if ret[0]: 
                 util.log.warning('Failed to make archive log dir with %d:\nOUPUT=\n%s\nERROR=\n%s' % ret)
         
@@ -367,5 +376,5 @@ class Job(object):
         dst = self.cfg.s('%(archive_user)s@%(archive_host)s:')
         dst += self.cfg.archivelogdir() + logdir
         src = util.get_logfilepath()
-        cmdstr = "scp -p %s %s" % (src, dst)
-        return remote.command(cmdstr)
+        return remote.scp(src, dst)
+
