@@ -16,3 +16,5 @@
 *.svg
 *.cut*
 test_fakelims.db
+build
+
