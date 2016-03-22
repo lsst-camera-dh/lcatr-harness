@@ -16,6 +16,8 @@ default_git_remote = 'origin'
 def find_srcdir():
     pkgdir = os.path.realpath('.')
     pkgname = os.path.basename(pkgdir)
+    if pkgname[0:6] == 'lcatr-':
+        pkgname = pkgname[6:]
 
     if os.path.exists(pkgname):
         return pkgname
