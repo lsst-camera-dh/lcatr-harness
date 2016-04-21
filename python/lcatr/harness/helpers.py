@@ -47,7 +47,7 @@ def dependency_jobids( ):
     # We need to assume formation of paths by JH does not change.  Relative to stage directory
     # that's (in eTraveler terminology)
     #    hardwareTypeName/lsstId/jobName/jobVersion/activityId
-    if isinstance(paths, basetring):
+    if isinstance(paths, basestring):
         paths = paths.split(':')
 
     d = {}
