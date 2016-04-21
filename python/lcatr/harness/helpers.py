@@ -35,3 +35,24 @@ def dependency_glob(pattern, jobname = None, paths = None):
             ret += hit
         continue
     return ret
+
+def dependency_jobids( ):
+    '''
+    Return a dict mapping jobname to job id for all prerequisite jobs
+    '''
+
+    paths = os.environ.get('LCATR_DEPENDENCY_PATH')
+    if not paths: return
+
+    # We need to assume formation of paths by JH does not change.  Relative to stage directory
+    # that's (in eTraveler terminology)
+    #    hardwareTypeName/lsstId/jobName/jobVersion/activityId
+    if isinstance(paths, basetring):
+        paths = paths.split(':')
+
+    d = {}
+    for path in paths:
+        cmps = path.split('/')
+        last = len(cmps) - 1
+        d[cmps[last-2]] = cmps[last]
+    return d
