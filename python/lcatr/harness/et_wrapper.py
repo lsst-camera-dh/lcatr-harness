@@ -15,7 +15,7 @@ def __make_connection():
     # Assume defaults to start
     prodServer=True
     exp = 'LSST-CAMERA'
-    if '8180' in url: prodServer=False
+    if 'dev' in url: prodServer=False
     if 'srs.slac.stanford' in url: prodServer=False
     cmps = url.split('/')
     if 'exp' in cmps:
@@ -69,4 +69,17 @@ def adjustHardwareLabel(label, add=True, reason='from harnessed job'):
                                    reason=reason, activityId=actId)
     return msg
                                    
+def getHardwareHierarchy(noBatched='true'):
+    '''
+    Return array of dicts describing relationships of all subcomponents
+    of current component.  If noBatched is true (the default) relationships
+    involving batched components will be ignored.
+    '''
+    conn = __make_connection()
+    if conn == None: return 'Unable to connect to eTraveler server'
+    experimentSN=os.environ.get('LCATR_UNIT_ID')
+    htype=os.environ.get('LCATR_UNIT_TYPE')
+    a = conn.getHardwareHierarchy(experimentSN=experimentSN, htype=htype,
+                                  noBatched=noBatched)
+    return a
 
