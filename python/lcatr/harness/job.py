@@ -173,6 +173,15 @@ class Job(object):
         self.cfg.job_id = str(self.lims.jobid)
         miniDict = {}
         miniDict['LCATR_JOB_ID'] = str(self.lims.jobid)
+	if (self.lims.run_number != None):
+            self.cfg.run_number = str(self.lims.run_number)
+            miniDict['LCATR_RUN_NUMBER'] = str(self.lims.run_number)
+            util.log.info('Non-None value for lims run_number: %s\n' % str(self.lims.run_number))
+        else:
+            util.log.info('From do_register: no run number found\n')
+        if (self.lims.rootActivityId != None):
+            self.cfg.rootActivityId = str(self.lims.rootActivityId)
+            miniDict['LCATR_ROOT_ACTIVITY_ID'] = self.lims.rootActivityId
         self.em.update(miniDict)
         
         return
@@ -184,8 +193,13 @@ class Job(object):
         if not os.path.exists(dst_root):
             msg = 'Local stage root directory does not exists: %s' % dst_root
             raise RuntimeError, msg
-
-        path = self.cfg.subdir_policy % depinfo
+        if  self.lims.run_number != None:
+            # make new dict which include run_number
+            augmentedinfo = dict(depinfo)
+            augmentedinfo['run_number'] = self.lims.run_number
+            path = self.cfg.run_subdir_policy % augmentedinfo
+        else:
+            path = self.cfg.subdir_policy % depinfo
         rpath = self.cfg.s("%(archive_root)s/") + path
         src = self.cfg.s('%(archive_user)s@%(archive_host)s:') + rpath
         dst = os.path.join(dst_root, path)

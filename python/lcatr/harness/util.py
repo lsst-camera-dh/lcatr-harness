@@ -8,6 +8,7 @@ from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 import datetime
 import string
 import shutil
+from lcatr.harness.version import __version__
 
 class MovableLogger(object):
     '''
@@ -33,6 +34,7 @@ class MovableLogger(object):
         self.l.setLevel(level)
 
         print 'logging to: %s' % self.filepath
+        self.info('lcatr harness version %s' % __version__)
         return
 
     def flush_lf(self):

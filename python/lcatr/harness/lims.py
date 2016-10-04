@@ -36,6 +36,8 @@ class Results(object):
         Create a lims.Register object connected to the given LIMS URL.
         '''
         self.jobid = None
+        self.run_number = None
+        self.rootActivityId = None
         if url[-1] == '/': url = url[:-1]
         if not url.endswith(API['base_path']):
             url += '/' + API['base_path']
@@ -49,7 +51,9 @@ class Results(object):
         Take keyword arguments and return dictionary suitable for use
         with command or raise ValueError.
         '''
-        cfg = dict(kwds, stamp=int(time.time()), jobid=self.jobid)
+        cfg = dict(kwds, stamp=int(time.time()), jobid=self.jobid, 
+                   run_number=self.run_number, 
+                   rootActivityId=self.rootActivityId)
         want = set(API[command])
         missing = want.difference(cfg)
         if missing:
@@ -93,12 +97,28 @@ class Results(object):
         prerequisites are stored in the .prereq data member.
         """
         res = self.make_query('requestID', **kwds)
+        for k in res:
+            msg = 'For key %s in res found value res[k]=%s\n' % (k, res[k])
+            log.info(msg)
+        if 'jobid' not in res:
+            if 'error' not in res:
+                msg = 'Incomplete response to LIMS register.  No jobid, no error'
+                log.error(msg)
+                raise ValueError, msg
+            else:
+                msg = 'Failed to register with LIMs: "%s"' % res['error']
+                log.error(msg)
+                raise ValueError, msg
         jobid = res['jobid']
         if jobid is None:
             msg = 'Failed to register with LIMS: "%s"' % res['error']
             log.error(msg)
             raise ValueError, msg
         self.jobid = jobid
+        if 'runNumber' in res:
+            self.run_number = res['runNumber']
+        if 'rootActivityId' in res:
+            self.rootActivityId = res['rootActivityId']
         prereq = []
         for pr in res['prereq']:
             # LIMS API specifies "jobid" w/out an underscore, harness has "job_id"
