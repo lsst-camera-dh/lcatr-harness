@@ -40,7 +40,8 @@ def setHardwareStatus(newStatus, reason='From harnessed job'):
     returns: String value. 'Success' if operation succeeded; else error message
     '''
     conn = __make_connection()
-    if conn == None: return 'Unable to connect to eTraveler server'
+    if conn == None: 
+        raise Exception, 'Unable to connect to eTraveler server'
     expSN=os.environ.get('LCATR_UNIT_ID')
     ht=os.environ.get('LCATR_UNIT_TYPE')
     actId = os.environ.get('LCATR_JOB_ID')
@@ -58,7 +59,8 @@ def adjustHardwareLabel(label, add=True, reason='from harnessed job'):
     returns: String value. 'Success' if operation succeeded, else error message
     '''
     conn = __make_connection()
-    if conn == None: return 'Unable to connect to eTraveler server'
+    if conn == None: 
+        raise Exception, 'Unable to connect to eTraveler server'
     experimentSN=os.environ.get('LCATR_UNIT_ID')
     htype=os.environ.get('LCATR_UNIT_TYPE')
     if add: adding='true'
@@ -76,10 +78,52 @@ def getHardwareHierarchy(noBatched='true'):
     involving batched components will be ignored.
     '''
     conn = __make_connection()
-    if conn == None: return 'Unable to connect to eTraveler server'
+    if conn == None: 
+        raise Exception, 'Unable to connect to eTraveler server'
     experimentSN=os.environ.get('LCATR_UNIT_ID')
     htype=os.environ.get('LCATR_UNIT_TYPE')
     a = conn.getHardwareHierarchy(experimentSN=experimentSN, htype=htype,
                                   noBatched=noBatched)
     return a
 
+def getContainingHardware():
+    '''
+    Return array of dicts describing relationships of all ancestors
+    of current component.  
+    '''
+    conn = __make_connection()
+    if conn == None: 
+        raise Exception, 'Unable to connect to eTraveler server'
+    expSN=os.environ.get('LCATR_UNIT_ID')
+    htype=os.environ.get('LCATR_UNIT_TYPE')
+    a = conn.getContainingHardware(experimentSN=expSN, 
+                                   htype=htype)
+    return a
+
+def getManufacturerId():
+    '''
+    Return manufacturer id string for current component
+    '''
+    conn = __make_connection()
+    if conn == None: 
+        raise Exception, 'Unable to connect to eTraveler server'
+    expSN=os.environ.get('LCATR_UNIT_ID')
+    htype=os.environ.get('LCATR_UNIT_TYPE')
+    mId = conn.getManufacturerId(experimentSN=expSN, htype=htype)
+
+    return mId
+
+def setManufacturerId(newId, reason="Set from et_wrapper"):
+    '''
+    Set manufacturer id for current component to supplied value.
+    Fails (throws exception) if component already had a 
+    non-blank manufacturer id.
+    '''
+    conn = __make_connection()
+    if conn == None: 
+        raise Exception, 'Unable to connect to eTraveler server'
+    expSN=os.environ.get('LCATR_UNIT_ID')
+    htype=os.environ.get('LCATR_UNIT_TYPE')
+    conn.setManufacturerId(experimentSN=expSN, htype=htype,
+                           manufacturerId=newId,
+                           reason=reason)
