@@ -196,7 +196,7 @@ class Job(object):
         if  self.lims.runNumber != None:
             # make new dict which includes runNumber
             augmentedinfo = dict(depinfo)
-            if self.prod:
+            if self.forceMatch:
                 if depinfo['runNumber'] != self.lims.runNumber:
                     raise RuntimeError, 'dependent job not in current run'
 
@@ -242,6 +242,12 @@ class Job(object):
             self.prod = True
         except ValueError:
             self.prod = False
+
+        self.forceMatch = self.prod
+        if os.environ.get('LCATR_FORCE_RUN_MATCH') is not None:
+            if not self.prod:
+                util.log.info('LCATR_FORCE_RUN_MATCH is set for non-Prod db')
+                self.forceMatch = True
 
         deppath = []
         for depinfo in self.lims.prereq:
