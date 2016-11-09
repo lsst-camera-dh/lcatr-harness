@@ -36,7 +36,7 @@ class Results(object):
         Create a lims.Register object connected to the given LIMS URL.
         '''
         self.jobid = None
-        self.run_number = None
+        self.runNumber = None
         self.rootActivityId = None
         if url[-1] == '/': url = url[:-1]
         if not url.endswith(API['base_path']):
@@ -52,7 +52,7 @@ class Results(object):
         with command or raise ValueError.
         '''
         cfg = dict(kwds, stamp=int(time.time()), jobid=self.jobid, 
-                   run_number=self.run_number, 
+                   runNumber=self.runNumber, 
                    rootActivityId=self.rootActivityId)
         want = set(API[command])
         missing = want.difference(cfg)
@@ -116,7 +116,7 @@ class Results(object):
             raise ValueError, msg
         self.jobid = jobid
         if 'runNumber' in res:
-            self.run_number = res['runNumber']
+            self.runNumber = res['runNumber']
         if 'rootActivityId' in res:
             self.rootActivityId = res['rootActivityId']
         prereq = []

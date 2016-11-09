@@ -43,7 +43,7 @@ class Config(object):
     # ccdtest_root:
     subdir_policy = '%(unit_type)s/%(unit_id)s/%(job)s/%(version)s/%(job_id)s'
     # Alternate layout when run number is available
-    run_subdir_policy = '%(unit_type)s/%(unit_id)s/%(run_number)s/%(job)s/%(version)s/%(job_id)s'
+    run_subdir_policy = '%(unit_type)s/%(unit_id)s/%(runNumber)s/%(job)s/%(version)s/%(job_id)s'
 
     # places to look for RC files.
     default_config_files = [
@@ -267,7 +267,7 @@ class Config(object):
         if prefix == 'archive': prefix = self.archive_root + '/'
         if prefix == 'stage':   prefix = self.stage_root + '/'
         if not prefix:          prefix = ''
-        if 'run_number' in self.__dict__:
+        if 'runNumber' in self.__dict__:
             s = Config.run_subdir_policy % self.__dict__
         else:
             s = Config.subdir_policy % self.__dict__
