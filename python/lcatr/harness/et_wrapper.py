@@ -15,19 +15,32 @@ def __make_connection():
     # Assume defaults to start
     prodServer=True
     exp = 'LSST-CAMERA'
-    if 'dev' in url: prodServer=False
-    if 'srs.slac.stanford' in url: prodServer=False
-    cmps = url.split('/')
-    if 'exp' in cmps:
-        expIx = cmps.index('exp') + 1
-        exp = cmps[expIx]
-    if 'Results' in cmps:
-        db = cmps[cmps.index('Results') - 1]
+    if 'localhost' in url:
+        db = 'Dev'
+        if 'ETAPI_DEVSERVER' in os.environ:
+            prodServer=False
+        if 'ETAPI_DB' in os.environ:
+            db = os.environ.get('ETAPI_DB')
+            if db == 'Prod':
+                raise ValueError, "May not access Prod database with fake eTraveler"
+        # look for alternate settings in environment variables
+        #    ETAPI_EXPERIMENT -- don't bother for now; not supported by API
+        #    ETAPI_DEVSERVER     --     if defined, use dev server
+        #    ETAPI_DB            -- if defined and not 'Prod', use it
     else:
-        if 'eTraveler' in cmps:
-            db = cmps[cmps.index('eTraveler') + 1]
+        if 'dev' in url: prodServer=False
+        if 'srs.slac.stanford' in url: prodServer=False
+        cmps = url.split('/')
+        if 'exp' in cmps:
+            expIx = cmps.index('exp') + 1
+            exp = cmps[expIx]
+        if 'Results' in cmps:
+            db = cmps[cmps.index('Results') - 1]
         else:
-            return None
+            if 'eTraveler' in cmps:
+                db = cmps[cmps.index('eTraveler') + 1]
+            else:
+                return None
     
     return Connection(operator, db, prodServer)
 
