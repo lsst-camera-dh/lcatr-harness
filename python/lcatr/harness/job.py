@@ -240,7 +240,7 @@ class Job(object):
         try:
             intRun = int(self.lims.runNumber)
             self.prod = True
-        except ValueError:
+        except (ValueError, TypeError):
             self.prod = False
 
         self.forceMatch = self.prod
