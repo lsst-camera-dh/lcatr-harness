@@ -173,10 +173,10 @@ class Job(object):
         self.cfg.job_id = str(self.lims.jobid)
         miniDict = {}
         miniDict['LCATR_JOB_ID'] = str(self.lims.jobid)
-	if (self.lims.run_number != None):
-            self.cfg.run_number = str(self.lims.run_number)
-            miniDict['LCATR_RUN_NUMBER'] = str(self.lims.run_number)
-            util.log.info('Non-None value for lims run_number: %s\n' % str(self.lims.run_number))
+	if (self.lims.runNumber != None):
+            self.cfg.runNumber = str(self.lims.runNumber)
+            miniDict['LCATR_RUN_NUMBER'] = str(self.lims.runNumber)
+            util.log.info('Non-None value for lims runNumber: %s\n' % str(self.lims.runNumber))
         else:
             util.log.info('From do_register: no run number found\n')
         if (self.lims.rootActivityId != None):
@@ -193,10 +193,14 @@ class Job(object):
         if not os.path.exists(dst_root):
             msg = 'Local stage root directory does not exists: %s' % dst_root
             raise RuntimeError, msg
-        if  self.lims.run_number != None:
-            # make new dict which include run_number
+        if  self.lims.runNumber != None:
+            # make new dict which includes runNumber
             augmentedinfo = dict(depinfo)
-            augmentedinfo['run_number'] = self.lims.run_number
+            if self.forceMatch:
+                if depinfo['runNumber'] != self.lims.runNumber:
+                    raise RuntimeError, 'dependent job not in current run'
+
+            augmentedinfo['runNumber'] = depinfo['runNumber']
             path = self.cfg.run_subdir_policy % augmentedinfo
         else:
             path = self.cfg.subdir_policy % depinfo
@@ -231,6 +235,19 @@ class Job(object):
             msg = 'Working directory already exists: %s' % wd
             util.log.error(msg)
             raise RuntimeError, msg
+
+        # Find out if we're in Prod database or not
+        try:
+            intRun = int(self.lims.runNumber)
+            self.prod = True
+        except (ValueError, TypeError):
+            self.prod = False
+
+        self.forceMatch = self.prod
+        if os.environ.get('LCATR_FORCE_RUN_MATCH') is not None:
+            if not self.prod:
+                util.log.info('LCATR_FORCE_RUN_MATCH is set for non-Prod db')
+                self.forceMatch = True
 
         deppath = []
         for depinfo in self.lims.prereq:

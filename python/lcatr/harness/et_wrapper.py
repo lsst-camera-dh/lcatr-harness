@@ -8,6 +8,9 @@ arguments for those functions
 from eTraveler.clientAPI.connection import Connection
 import os
 
+class EtWrapperConnectionError(RuntimeError):
+    pass
+
 def __make_connection():
     url=os.environ.get('LCATR_LIMS_URL')
     operator=os.environ.get('LCATR_OPERATOR')
@@ -15,19 +18,33 @@ def __make_connection():
     # Assume defaults to start
     prodServer=True
     exp = 'LSST-CAMERA'
-    if 'dev' in url: prodServer=False
-    if 'srs.slac.stanford' in url: prodServer=False
-    cmps = url.split('/')
-    if 'exp' in cmps:
-        expIx = cmps.index('exp') + 1
-        exp = cmps[expIx]
-    if 'Results' in cmps:
-        db = cmps[cmps.index('Results') - 1]
+    if 'localhost' in url:
+        db = 'Dev'
+        if 'ETAPI_DEVSERVER' in os.environ:
+            prodServer=False
+        if 'ETAPI_DB' in os.environ:
+            db = os.environ.get('ETAPI_DB')
+            if db == 'Prod':
+                raise EtWrapperConnectionError, "May not access Prod database with fake eTraveler"
+        # look for alternate settings in environment variables
+        #    ETAPI_EXPERIMENT -- don't bother for now; not supported by API
+        #    ETAPI_DEVSERVER     --     if defined, use dev server
+        #    ETAPI_DB            -- if defined and not 'Prod', use it
     else:
-        if 'eTraveler' in cmps:
-            db = cmps[cmps.index('eTraveler') + 1]
+        if 'dev' in url: prodServer=False
+        if 'srs.slac.stanford' in url: prodServer=False
+        cmps = url.split('/')
+        if 'exp' in cmps:
+            expIx = cmps.index('exp') + 1
+            exp = cmps[expIx]
+        if 'Results' in cmps:
+            db = cmps[cmps.index('Results') - 1]
         else:
-            return None
+            if 'eTraveler' in cmps:
+                db = cmps[cmps.index('eTraveler') + 1]
+            else:
+                msg = "Inappropriate value for LCATR_LIMS_URL: " + url 
+                raise EtWrapperConnectionError, msg
     
     return Connection(operator, db, prodServer)
 
@@ -40,8 +57,6 @@ def setHardwareStatus(newStatus, reason='From harnessed job'):
     returns: String value. 'Success' if operation succeeded; else error message
     '''
     conn = __make_connection()
-    if conn == None: 
-        raise Exception, 'Unable to connect to eTraveler server'
     expSN=os.environ.get('LCATR_UNIT_ID')
     ht=os.environ.get('LCATR_UNIT_TYPE')
     actId = os.environ.get('LCATR_JOB_ID')
@@ -59,8 +74,6 @@ def adjustHardwareLabel(label, add=True, reason='from harnessed job'):
     returns: String value. 'Success' if operation succeeded, else error message
     '''
     conn = __make_connection()
-    if conn == None: 
-        raise Exception, 'Unable to connect to eTraveler server'
     experimentSN=os.environ.get('LCATR_UNIT_ID')
     htype=os.environ.get('LCATR_UNIT_TYPE')
     if add: adding='true'
@@ -78,8 +91,6 @@ def getHardwareHierarchy(noBatched='true'):
     involving batched components will be ignored.
     '''
     conn = __make_connection()
-    if conn == None: 
-        raise Exception, 'Unable to connect to eTraveler server'
     experimentSN=os.environ.get('LCATR_UNIT_ID')
     htype=os.environ.get('LCATR_UNIT_TYPE')
     a = conn.getHardwareHierarchy(experimentSN=experimentSN, htype=htype,
@@ -92,8 +103,6 @@ def getContainingHardware():
     of current component.  
     '''
     conn = __make_connection()
-    if conn == None: 
-        raise Exception, 'Unable to connect to eTraveler server'
     expSN=os.environ.get('LCATR_UNIT_ID')
     htype=os.environ.get('LCATR_UNIT_TYPE')
     a = conn.getContainingHardware(experimentSN=expSN, 
@@ -105,8 +114,6 @@ def getManufacturerId():
     Return manufacturer id string for current component
     '''
     conn = __make_connection()
-    if conn == None: 
-        raise Exception, 'Unable to connect to eTraveler server'
     expSN=os.environ.get('LCATR_UNIT_ID')
     htype=os.environ.get('LCATR_UNIT_TYPE')
     mId = conn.getManufacturerId(experimentSN=expSN, htype=htype)
@@ -120,8 +127,6 @@ def setManufacturerId(newId, reason="Set from et_wrapper"):
     non-blank manufacturer id.
     '''
     conn = __make_connection()
-    if conn == None: 
-        raise Exception, 'Unable to connect to eTraveler server'
     expSN=os.environ.get('LCATR_UNIT_ID')
     htype=os.environ.get('LCATR_UNIT_TYPE')
     conn.setManufacturerId(experimentSN=expSN, htype=htype,
