@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-from wsgiref.simple_server import make_server
+from wsgiref.simple_server import make_server, WSGIServer
+from SocketServer import ThreadingMixIn
 import argparse
 import subprocess
 import urllib
@@ -46,7 +47,11 @@ def simple_app(environ, start_response):
     else: 
        return "Failed (rc=%d)" % return_code
 
-httpd = make_server('', port, simple_app)
+# See https://gist.github.com/coffeesnake/3093598
+class ThreadingWSGIServer(ThreadingMixIn, WSGIServer): 
+    pass
+
+httpd = make_server('', port, simple_app, ThreadingWSGIServer)
 print "Serving on port %s..." % port
 httpd.serve_forever()
         
