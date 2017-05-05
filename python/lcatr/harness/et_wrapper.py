@@ -132,3 +132,67 @@ def setManufacturerId(newId, reason="Set from et_wrapper"):
     conn.setManufacturerId(experimentSN=expSN, htype=htype,
                            manufacturerId=newId,
                            reason=reason)
+
+def getActivity(activityId):
+    '''
+    Get information about specified activity, including begin and end times
+    Returns a dict with keys 'begin', 'end', 'stepName', 'status', 'activityId'
+    May throw eTraveler.clientAPI.connection.ETClientAPIException,
+    ETClientAPINoDataException
+    '''
+    conn = __make_connection()
+    return conn.getActivity(activityId=activityId)
+
+def getRunActivities(run):
+    '''
+    Get information about activities in specified run.
+    Returns a list of dicts, ordered by activity id.
+    Comments for getActivity apply
+    '''
+    conn = __make_connection()
+    return conn.getRunActivities(run=run)
+
+def getRunResults(run, **kwds):
+    '''
+    Get summary information from harnessed jobs in specified run. Several
+    optional keyword arguments are available for filtering.  They may
+    be used in any combination
+    stepName - restrict output to this step
+    schemaName - restrict output to this schema
+    itemFilter - key-value pair, e.g. ("amp", 3).  For schemas containing
+                 the key, only return data where value matches specified.
+                 If schema does not contain the key, include its data as is
+    '''
+    rqst = {"run" : run}
+    for k in kwds:
+        rqst[k] = kwds[k]
+    conn = __make_connection()
+    return conn.getRunResults(**rqst)
+
+def getResultsJH(**kwds):
+    '''
+    Get summary information for components from a particular step within
+    a particular traveler type.
+    Required keywords are
+    htype  - hardware type name
+    travelerName
+    stepName
+    If no optional arguments are included, data will be returned for all
+    components of the specified type for which the step has been successfully
+    executed. 
+
+    Optional keyword arguments are available for filtering.  They may
+    be used in any combination except that model will be ignored if
+    experimentSN is included
+    schemaName - restrict output to this schema
+    itemFilter - key-value pair, e.g. ("amp", 3).  For schemas containing
+                 the key, only return data where value matches specified.
+                 If schema does not contain the key, include its data as is
+    model      - restrict output just to components of this model
+    experimentSN - return output only for the single specified component
+    '''
+    rqst = {}
+    for k in kwds:
+        rqst[k] = kwds[k]
+    conn = __make_connection()
+    return conn.getResultsJH(**rqst)
