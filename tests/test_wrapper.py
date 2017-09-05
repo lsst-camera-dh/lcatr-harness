@@ -79,6 +79,48 @@ for s in m['steps']:
     for i in m['steps'][s]:
         print 'Signer request: ', i
 
+print '\nCalling getManualResultsStep'
+m = getManualResultsStep(travelerName='SR-Cryostat-VER-06',
+                         hardwareType='TS3-Cryostat',
+                         stepName='record_rga_no_scan')
+print 'Data retrieved for ', len(m), ' components'
+for c in m:
+    cmpdata = m[c]
+    print 'Component: ',c, ' Run number ', cmpdata['runNumber']
+    steps = cmpdata['steps']
+    for s in steps:
+        inforecords = steps[s]
+        for patname in inforecords:
+            print 'Input pattern name: ', patname
+
+print '\nCalling getManualFilepathsStep'
+m = getManualFilepathsStep(htype='LCA-10753_RSA',
+                           stepName='SR-RSA-ASY-02_Analyze-Data-Run1',
+                           travelerName='SR-RSA-ASY-02')
+print 'Data retrieved for ', len(m), ' components'
+for c in m:
+    cmpdata = m[c]
+    print 'Component: ',c, ' Run number ', cmpdata['runNumber']
+    steps = cmpdata['steps']
+    for s in steps:
+        inforecords = steps[s]
+        for patname in inforecords:
+            print 'Input pattern name: ', patname
+
+print '\nCalling getManualSignaturesStep'
+statusList = ['success', 'inProgress', 'paused']
+m = getManualSignaturesStep(htype='LCA-10307', stepName='NCR_Approval',
+                            travelerName='NCR', activityStatus=statusList)
+print 'Data retrieved for ', len(m), ' components'
+for c in m:
+    cmpdata = m[c]
+    print 'Component: ',c, ' Run number ', cmpdata['runNumber']
+    steps = cmpdata['steps']
+    for s in steps:
+        inforecords = steps[s]
+        for sreq in inforecords:
+            print 'signer request: ',sreq
+
 
 
 
