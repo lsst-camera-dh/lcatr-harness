@@ -11,7 +11,7 @@ import os
 class EtWrapperConnectionError(RuntimeError):
     pass
 
-def __make_connection():
+def __make_connection(writer=False, cnfPath=None, debug=False):
     url=os.environ.get('LCATR_LIMS_URL')
     operator=os.environ.get('LCATR_OPERATOR')
     # Need to parse out experiment, db and whether it's prod or dev server
@@ -46,17 +46,25 @@ def __make_connection():
                 msg = "Inappropriate value for LCATR_LIMS_URL: " + url 
                 raise EtWrapperConnectionError, msg
     
-    return Connection(operator, db, prodServer)
+    if (writer) and (cnfPath != None):
+        return Connection(operator, db, prodServer, cnfPath=cnfPath)
+    else:
+        return Connection(operator, db, prodServer, debug=debug)
+def __ourRun():
+    return os.environ.get('LCATR_RUN_NUMBER')
 
 
-def setHardwareStatus(newStatus, reason='From harnessed job'):
+def setHardwareStatus(newStatus, reason='From harnessed job',cnfPath=None):
     '''
     Set hardware status of component job is concerned with.
     newStatus:  String value which must correspond to legitimate hardware
                 status
     returns: String value. 'Success' if operation succeeded; else error message
     '''
-    conn = __make_connection()
+    if (cnfPath != None):
+        conn = __make_connection(cnfPath=cnfPath)
+    else:
+        conn = __make_connection()
     expSN=os.environ.get('LCATR_UNIT_ID')
     ht=os.environ.get('LCATR_UNIT_TYPE')
     actId = os.environ.get('LCATR_JOB_ID')
@@ -65,7 +73,8 @@ def setHardwareStatus(newStatus, reason='From harnessed job'):
                                  reason=reason, activityId=actId)
     return msg
 
-def adjustHardwareLabel(label, add=True, reason='from harnessed job'):
+def adjustHardwareLabel(label, add=True, reason='from harnessed job',
+                        cnfPath=None):
     '''
     Add a label to or remove from component job is concerned with.
     label:   String value of label to be added or removed.  Must correspond
@@ -73,7 +82,10 @@ def adjustHardwareLabel(label, add=True, reason='from harnessed job'):
     add:     Defaults to True.  Set to False to remove a label
     returns: String value. 'Success' if operation succeeded, else error message
     '''
-    conn = __make_connection()
+    if (cnfPath != None):
+        conn = __make_connection(cnfPath=cnfPath)
+    else:
+        conn = __make_connection()
     experimentSN=os.environ.get('LCATR_UNIT_ID')
     htype=os.environ.get('LCATR_UNIT_TYPE')
     if add: adding='true'
@@ -120,13 +132,16 @@ def getManufacturerId():
 
     return mId
 
-def setManufacturerId(newId, reason="Set from et_wrapper"):
+def setManufacturerId(newId, reason="Set from et_wrapper",cnfPath=None):
     '''
     Set manufacturer id for current component to supplied value.
     Fails (throws exception) if component already had a 
     non-blank manufacturer id.
     '''
-    conn = __make_connection()
+    if (cnfPath != None):
+        conn = __make_connection(cnfPath=cnfPath)
+    else:
+        conn = __make_connection()
     expSN=os.environ.get('LCATR_UNIT_ID')
     htype=os.environ.get('LCATR_UNIT_TYPE')
     conn.setManufacturerId(experimentSN=expSN, htype=htype,
@@ -150,7 +165,37 @@ def getRunActivities(run):
     Comments for getActivity apply
     '''
     conn = __make_connection()
+    if (run == None) or (run == "@"):
+        return conn.getRunActivities(run=__ourRun())
     return conn.getRunActivities(run=run)
+
+def getRunSummary(run=None):
+    '''
+    Get information about specified run.
+    Returns a dict.
+    '''
+    conn = __make_connection()
+    if (run == None) or (run == "@"):
+        return conn.getRunSummary(run=__ourRun())
+    return conn.getRunSummary(run=run)
+
+def getComponentRuns(htype=None, experimentSN=None):
+    
+    conn = __make_connection()
+    if experimentSN == None:
+        return conn.getComponentRuns(htype=os.environ.get('LCATR_UNIT_TYPE'),
+                                     experimentSN=os.environ.get('LCATR_UNIT_ID'))
+    if htype==None:
+        raise ValueError, "et_wrapper.getComponentRuns: Missing htype argument"
+    return conn.getComponentRuns(htype=htype, experimentSN=experimentSN)
+
+def getHardwareInstances(htype, experimentSN=None, hardwareLabels=None):
+
+    conn = __make_connection()
+    rqst = {"htype": htype}
+    if experimentSN != None: rqst["experimentSN"] = experimentSN
+    if hardwareLabels != None: rqst['hardwareLabels'] = hardwareLabels;
+    return conn.getHardwareInstances(**rqst)
 
 def getRunResults(run, **kwds):
     '''
@@ -163,7 +208,10 @@ def getRunResults(run, **kwds):
                  the key, only return data where value matches specified.
                  If schema does not contain the key, include its data as is
     '''
-    rqst = {"run" : run}
+    if (run == None) or (run == "@"):
+        rqst = {"run" : __ourRun()}
+    else:
+        rqst = {"run" : run}
     for k in kwds:
         rqst[k] = kwds[k]
     conn = __make_connection()
@@ -190,9 +238,187 @@ def getResultsJH(**kwds):
                  If schema does not contain the key, include its data as is
     model      - restrict output just to components of this model
     experimentSN - return output only for the single specified component
+    hardwareLabels - set of strings.  Only return information for components
+    with at least one label in the set
     '''
     rqst = {}
     for k in kwds:
         rqst[k] = kwds[k]
     conn = __make_connection()
     return conn.getResultsJH(**rqst)
+
+def getFilepathsJH(**kwds):
+    '''
+    Get filepath information for components from a particular step within
+    a particular traveler type.
+    Required keywords are
+    htype  - hardware type name
+    travelerName
+    stepName
+    If no optional arguments are included, data will be returned for all
+    components of the specified type for which the step has been successfully
+    executed. 
+
+    Optional keyword arguments are available for filtering. 
+    model will be ignored if experimentSN is included
+    model      - restrict output just to components of this model
+    experimentSN - return output only for the single specified component
+    hardwareLabels - set of strings.  Only return information for components
+    with at least one label in the set
+    '''
+    rqst = {}
+    for k in kwds:
+        rqst[k] = kwds[k]
+    conn = __make_connection()
+    return conn.getFilepathsJH(**rqst)
+
+def getRunFilepaths(run=None, **kwds):
+    '''
+    Get filepath information from harnessed jobs in specified run.
+    stepName optional keyword argument can be used for filter.
+    If run is None or "@" return info for current run
+    stepName - restrict output to this step
+    itemFilter - key-value pair, e.g. ("amp", 3).  For schemas containing
+                 the key, only return data where value matches specified.
+                 If schema does not contain the key, include its data as is
+    '''
+    if (run == None) or (run == "@"):
+        rqst = {"run" : __ourRun()}
+    else:
+        rqst = {"run" : run}
+    for k in kwds:
+        rqst[k] = kwds[k]
+    conn = __make_connection()
+    return conn.getRunFilepaths(**rqst)
+
+def getManualRunResults(run=None, **kwds):
+    '''
+    Get operator inputs (int, float or string) in specified run.
+    stepName optional keyword argument can be used for filter. 
+    If run is None or "@" return info for current run
+    stepName - restrict output to this step
+    itemFilter - key-value pair, e.g. ("amp", 3).  For schemas containing
+                 the key, only return data where value matches specified.
+                 If schema does not contain the key, include its data as is
+    '''
+    if (run == None) or (run == "@"):
+        rqst = {"run" : __ourRun()}
+    else:
+        rqst = {"run" : run}
+    for k in kwds:
+        rqst[k] = kwds[k]
+    conn = __make_connection()
+    return conn.getManualRunResults(**rqst)
+
+def getManualRunFilepaths(run=None, **kwds):
+    '''
+    Get operator inputs (filepaths) in specified run.
+    stepName optional keyword argument can be used for filter. 
+    If run is None or "@" return info for current run
+    stepName - restrict output to this step
+    itemFilter - key-value pair, e.g. ("amp", 3).  For schemas containing
+                 the key, only return data where value matches specified.
+                 If schema does not contain the key, include its data as is
+    '''
+    if (run == None) or (run == "@"):
+        rqst = {"run" : __ourRun()}
+    else:
+        rqst = {"run" : run}
+    for k in kwds:
+        rqst[k] = kwds[k]
+    conn = __make_connection()
+    return conn.getManualRunFilepaths(**rqst)
+
+def getManualRunSignatures(run=None, **kwds):
+    '''
+    Get operator inputs (signatures) in specified run.
+    stepName optional keyword argument can be used for filter. 
+    If run is None or "@" return info for current run
+    stepName - restrict output to this step
+    itemFilter - key-value pair, e.g. ("amp", 3).  For schemas containing
+                 the key, only return data where value matches specified.
+                 If schema does not contain the key, include its data as is
+    '''
+    if (run == None) or (run == "@"):
+        rqst = {"run" : __ourRun()}
+    else:
+        rqst = {"run" : run}
+    for k in kwds:
+        rqst[k] = kwds[k]
+    conn = __make_connection(debug=True)
+    return conn.getManualRunSignatures(**rqst)
+
+def getManualResultsStep(**kwds):
+    '''
+    Get operator-entered information for components from a particular step 
+    within a particular traveler type.
+    Required keywords are
+    htype  - hardware type name
+    travelerName
+    stepName
+    If no optional arguments are included, data will be returned for all
+    components of the specified type for which the step has been successfully
+    executed. 
+
+    Optional keyword arguments are available for filtering. model
+    will be ignored if experimentSN is included
+    model      - restrict output just to components of this model
+    experimentSN - return output only for the single specified component
+    hardwareLabels - set of strings.  Only return information for components
+    with at least one label in the set
+    '''
+    rqst = {}
+    for k in kwds:
+        rqst[k] = kwds[k]
+    conn = __make_connection()
+    return conn.getManualResultsStep(**rqst)
+
+def getManualFilepathsStep(**kwds):
+    '''
+    Get operator-entered filepaths for components from a particular step 
+    within a particular traveler type.
+    Required keywords are
+    htype  - hardware type name
+    travelerName
+    stepName
+    If no optional arguments are included, data will be returned for all
+    components of the specified type for which the step has been successfully
+    executed. 
+
+    Optional keyword arguments are available for filtering. model
+    will be ignored if experimentSN is included
+    model      - restrict output just to components of this model
+    experimentSN - return output only for the single specified component
+    hardwareLabels - set of strings.  Only return information for components
+    with at least one label in the set
+    '''
+    rqst = {}
+    for k in kwds:
+        rqst[k] = kwds[k]
+    conn = __make_connection()
+    return conn.getManualFilepathsStep(**rqst)
+
+def getManualSignaturesStep(**kwds):
+    '''
+    Get operator-entered filepaths for components from a particular step 
+    within a particular traveler type.
+    Required keywords are
+    htype  - hardware type name
+    travelerName
+    stepName
+    If no optional arguments are included, data will be returned for all
+    components of the specified type for which the step has been successfully
+    executed. 
+
+    Optional keyword arguments are available for filtering. model
+    will be ignored if experimentSN is included
+    model      - restrict output just to components of this model
+    experimentSN - return output only for the single specified component
+    hardwareLabels - set of strings.  Only return information for components
+    with at least one label in the set
+    '''
+    rqst = {}
+    for k in kwds:
+        rqst[k] = kwds[k]
+    conn = __make_connection()
+    return conn.getManualSignaturesStep(**rqst)
