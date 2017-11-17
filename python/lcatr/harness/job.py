@@ -300,6 +300,7 @@ class Job(object):
         If logdir argument is not empty string, it should start with
         leading /
         '''
+
         rdir =self.cfg.archive_root
         if logdir != None: rdir = self.cfg.archivelogdir() + logdir
         rstat = remote.stat(rdir,
@@ -340,7 +341,10 @@ class Job(object):
         if os.environ.get('IRODS_ARCHIVE') is not None:
             dst = "i:"
         else:
-            dst = self.cfg.s('%(archive_user)s@%(archive_host)s:')
+            if self.cfg.archive_host != 'localhost':
+                dst = self.cfg.s('%(archive_user)s@%(archive_host)s:')
+            else:
+                dst=""
         dst += self.cfg.subdir('archive') + '/'
         
         if self.archive_exists():
@@ -356,7 +360,12 @@ class Job(object):
             raise RuntimeError, \
                 'Failed to make archive directory with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret
         util.log.info('Archiving from "%s" to "%s' % (new_src, dst))
-        ret = remote.rsync(new_src,dst)
+        
+        if os.environ.get('IRODS_ARCHIVE') is not None or (self.cfg.archive_host != 'localhost'):
+            ret = remote.rsync(new_src,dst)
+        else:
+            new_src += '*'
+            ret = remote.cp(new_src, dst, True)
         if ret[0]:
             raise RuntimeError, 'Archive failed with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret
         ## If it works, clean up with  shutil.rmtree(to_archive)
@@ -403,9 +412,15 @@ class Job(object):
                 util.log.warning('Failed to make archive log dir with %d:\nOUPUT=\n%s\nERROR=\n%s' % ret)
         
         util.flush_logfile()
-        #  scp to archive
-        dst = self.cfg.s('%(archive_user)s@%(archive_host)s:')
-        dst += self.cfg.archivelogdir() + logdir
+        #  scp to archive unless local
         src = util.get_logfilepath()
-        return remote.scp(src, dst)
+        if self.cfg.archive_host == 'localhost' and os.environ.get('IRODS_ARCHIVE') is None:
+            dst = self.cfg.archivelogdir() + logdir
+            return remote.cp(src, dst)
+            
+        else:
+            dst = self.cfg.s('%(archive_user)s@%(archive_host)s:')
+            dst += self.cfg.archivelogdir() + logdir
+
+            return remote.scp(src, dst)
 

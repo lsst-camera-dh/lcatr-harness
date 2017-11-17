@@ -38,7 +38,8 @@ def command(cmdstr, retries=2):
 
 def cmd(cmdstr, host = "localhost", user = os.environ.get('USER'), retries=2):
     '''
-    Run cmd on remote as user@host via SSH.
+    Run cmd on remote as user@host via SSH *unless* host is "localhost"
+    and user is current user.  In that case just run command locally
 
     Return triple of (status, stdout, stderr).
 
@@ -47,8 +48,13 @@ def cmd(cmdstr, host = "localhost", user = os.environ.get('USER'), retries=2):
     '''
     if isinstance(cmdstr,list): cmdstr = ' '.join(cmdstr)
 
-    sshcmd = "%s %s@%s %s" % (ssh_command, user, host, cmdstr)
-    return command(sshcmd, retries)
+    # If host is localhost and user is current user, don't bother with ssh
+    if (host == "localhost") and (user == os.environ.get('USER')):
+        thecmd = cmdstr
+        #print "Executing local command ", thecmd
+    else:
+        thecmd = "%s %s@%s %s" % (ssh_command, user, host, cmdstr)
+    return command(thecmd, retries)
 
 def stat(path, host = "localhost", user = os.environ.get('USER')):
     '''
@@ -69,11 +75,29 @@ def rsync(src,dst):
 def mkdir(target_dir, host, user):
     '''
     Execute mkdir on a remote <user>@<host> connection
+    if it really *is* remote or a different user. Else just 
+    make the dir
     '''
-    cmdstr = 'mkdir -p %s' % target_dir
-    return cmd(cmdstr, host, user)
+    if (host != 'localhost') or (user != os.environ.get('USER')):
+        cmdstr = 'mkdir -p %s' % target_dir
+        return cmd(cmdstr, host, user)
+
+    try:
+        #print "Trying to make local directory ", target_dir
+        os.makedirs(target_dir)
+        return 0,'',''
+    except Exception, err:
+        return 1,'', err
+
 
 def scp(src, dst):
     cmdstr = "scp -p %s %s" % (src, dst)
     return command(cmdstr)
 
+def cp(src, dst, recursive=False):
+    if recursive:
+        cmdstr = "cp -rp %s %s" % (src, dst)
+    else:
+        cmdstr = "cp -p %s %s" % (src, dst)
+    #print "Doing local copy ", src, " to ", dst
+    return command(cmdstr)
