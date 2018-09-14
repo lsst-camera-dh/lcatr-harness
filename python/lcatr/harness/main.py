@@ -2,6 +2,7 @@
 '''
 User interface to the job harness.
 '''
+from __future__ import print_function
 
 import sys
 import argparse
@@ -12,19 +13,19 @@ from lcatr.harness import job as jobmod
 non_job_steps = ['help','dump','joblist']
 
 def do_help(cfg):
-    print 'usage: lcatr_harness [options] [steps]'
+    print('usage: lcatr_harness [options] [steps]')
     return 'help called'
 
 def do_dump(cfg):
-    print 'Configuration:'
+    print('Configuration:')
     for k,v in sorted(cfg.__dict__.items()):
-        print '%s: %s' % (k,v)
+        print('%s: %s' % (k,v))
     sys.exit(1)
 
 def do_joblist(cfg):
-    print 'Print known jobs'
+    print('Print known jobs')
     em = environment.cfg2em(cfg)
-    print em.avail("")
+    print(em.avail(""))
     sys.exit(1)
 
 def cmdline(args):
@@ -44,7 +45,7 @@ def cmdline(args):
 
     steps = []
     kwds = {}
-    for opt,arg in optarg.__dict__.iteritems():
+    for opt,arg in optarg.__dict__.items():
         if not arg: continue
         if opt == "steps":
             steps = arg
@@ -63,8 +64,8 @@ def cmdline(args):
     
     job = jobmod.Job(cfg)
 
-    if cfg.__dict__.has_key('job_id'):
-        print 'Rerun with steps: %s' % (', '.join(steps), )
+    if 'job_id' in cfg.__dict__:
+        print('Rerun with steps: %s' % (', '.join(steps), ))
         job.rerun(steps)
     else:
         job.run(steps)

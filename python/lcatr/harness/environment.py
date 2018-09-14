@@ -3,11 +3,17 @@
 Handle environment.
 '''
 
+from __future__ import print_function
+#from __future__ import absolute_import
+#from future import standard_library
+#standard_library.install_aliases()
+#from builtins import object
+
 import os
 import re
 import subprocess
 from glob import glob
-from util import log
+from .util import log
 
 guessed_bases = [
     '$VIRTUAL_ENV/Modules/[0-9]*',
@@ -30,7 +36,7 @@ def guess_modules_thing(thing, bases = guessed_bases):
         if not paths: 
             continue
         paths.sort()
-        return paths[-1]
+        return str(paths[-1])
     return ""
 
 def guess_modules_home():
@@ -38,14 +44,14 @@ def guess_modules_home():
     Try to guess a value for MODULESHOME
     '''
     mh = os.environ.get('MODULESHOME')
-    if mh: return mh
+    if mh: return str(mh)
 
     trial = list(guessed_bases)
     trial += ['/usr/share/modules'] # debian
 
     got = guess_modules_thing('init', trial)
     if not got: return ""
-    return os.path.dirname(got)
+    return str(os.path.dirname(got))
         
 def guess_modules_cmd():
     '''
@@ -60,23 +66,24 @@ def guess_modules_cmd():
     
 def guess_modules_version():
     mv = os.environ.get('MODULE_VERSION')
-    if mv: return mv
+    if mv: return str(mv)
     got = guess_modules_thing('')
     if not got: return ""
     if got[-1] == '/': got = got[:-1]
     ver = os.path.basename(got)
     #print 'got ver:%s from:%s'%(ver,got)
-    return os.path.basename(ver)
+    return str(os.path.basename(ver))
 
 def guess_modules_path():
-    ret = os.path.expandvars("$VIRTUAL_ENV/share")
-    mp = os.environ.get('MODULEPATH')
+    ret = str(os.path.expandvars(u"$VIRTUAL_ENV/share"))
+    mp = str(os.environ.get('MODULEPATH'))
     if mp:
 	ret += ':' + mp
 
+    print('Type of guessed MODULEPATH: ',type(ret))
     return ret
 
-def resolve_modulepath(home, env = None, modpath = None):
+def resolve_modulepath(home, env = None, modpatharg = None):
     """
     Resolve the default modulepath in the way that the "module" command would.
     """
@@ -84,10 +91,18 @@ def resolve_modulepath(home, env = None, modpath = None):
     if env:
         os.environ = env
 
-    if not modpath:
+    print('Type of modpatharg: ', type(modpatharg))
+    print('Value of modpatharg:  ', modpatharg)
+    if not modpatharg:
         modpath = []
-    elif isinstance(modpath,str):
-        modpath = modpath.split(":")
+    elif isinstance(modpatharg,str):
+        modpath = modpatharg.split(':')
+    elif (type(modpatharg) == type(u' ')):
+        modpath = str(modpatharg).split(':')
+    else:
+        modpath = modpatharg
+
+    print('Type of modpath (should be list) : %s', type(modpath))    
     try:
         fp = open(os.path.join(home, 'init/.modulespath'))
     except IOError:
@@ -98,13 +113,15 @@ def resolve_modulepath(home, env = None, modpath = None):
             line = line.strip()
             if not line: continue
             line = os.path.expandvars(line)
+            print('Type of expandvars line is ', type(line))
             if line not in modpath:
-                modpath.append(line)
+                modpath.append(str(line))
             continue
         pass
 
     os.environ = saved_environ
 
+    print('Type of modpath as returned (should be list) : %s', type(modpath))    
     return modpath
 
 
@@ -145,12 +162,14 @@ class Modules(object):
         environment for modules itself.  Raise RuntimeError if failed.
         '''
         home = guess_modules_home()
+        print('Type of guessed home: ', type(home))
         if not home: raise RuntimeError, 'No modules home guessed'
 
         modcmd = guess_modules_cmd()
         if not modcmd: raise RuntimeError, 'No modules command guessed'
 
         version = guess_modules_version()
+        print('Result of guess_modules_version has type ', type(version))
         if not version: raise RuntimeError, 'No modules version guessed'
 
         self.setup(home, modcmd, version)
@@ -185,6 +204,8 @@ class Modules(object):
 
         self.cmdstr = cmd
 
+        version = str(version)
+        print("updating self.env version with type ", type(version))
         self.env.update({
             'MODULESHOME': home,
             'MODULE_VERSION': version,
@@ -192,14 +213,23 @@ class Modules(object):
             'LOADEDMODULES': '',
             })
 
-        modpath = resolve_modulepath(home, env = self.env, modpath = modpath)
-
+        print('after update MODULESHOME env type is ', type(self.env['MODULESHOME']))
+        modpath = resolve_modulepath(home, env = self.env, modpatharg = modpath)
+        print('Type of modpath returned (should be list) : ', type(modpath))          
+        #print('Type of entry: ', type(modpath[0]))
         # insert lcatr job expectations
         modpath += [self.install_area]
 
-        self.env['MODULEPATH'] = ':'.join(modpath)
-        self.env['LCATR_MODULES'] = self.install_area + '/modulefiles'
+        for elt in modpath:
+            print('Type of %s is ' % elt, type(elt))
 
+        joined = ':'.join(modpath)
+        print('Type of joined is ', type(joined))
+        self.env['MODULEPATH'] = ':'.join(modpath)
+
+        print('Type of self.env["MODULEPATH"]: ', type(self.env['MODULEPATH']))
+        self.env['LCATR_MODULES'] = self.install_area + '/modulefiles'
+        print('type of self.env LCATR_MODULES is ', type(self.env['LCATR_MODULES']))
         return
 
     def command(self, flavor, *args):
@@ -226,6 +256,8 @@ class Modules(object):
             (' '.join(cmd), self.env['MODULEPATH'])
         log.info(msg)
         for k,v in self.env.iteritems():
+            if (type(k) != str) : print('Key type is %s' % type(k))
+            if (type(v) != str) : print('Value type is %s' % type(v))
             assert type(k) == str and type(v) == str, 'bad: %s:%s'%(k,v)
         proc = subprocess.Popen(cmd,
                                 stdout = subprocess.PIPE,
@@ -270,7 +302,7 @@ class Modules(object):
                 continue
             msg = 'unhandled line in interpreting module environment: "%s"' % line
             log.warning(msg)
-            print msg
+            print(msg)
             continue
         return
     
@@ -301,12 +333,12 @@ class Modules(object):
         '''
         Execute the command string in the environment.
         '''
-        import commands
+        from .commands import execute as comm_execute
         try:
-            ret = commands.execute(cmdstr, self.env, out)
+            ret = comm_execute(cmdstr, self.env, out)
         except OSError:
             msg = 'Failed to run: %s' % cmdstr
-            print msg
+            print(msg)
             log.error(msg)
             raise
 
@@ -326,6 +358,7 @@ def cfg2em(cfg):
     env.update(newenv)
 
     em = Modules(env)
+
     em.setup(cfg.modules_home, cfg.modules_cmd, 
              cfg.modules_version, cfg.modules_path)
 

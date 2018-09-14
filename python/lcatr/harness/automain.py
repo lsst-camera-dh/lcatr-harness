@@ -2,6 +2,7 @@
 '''
 User interface to the job harness iterator
 '''
+from __future__ import print_function
 
 import sys
 import argparse
@@ -13,13 +14,13 @@ from lcatr.harness import iterator as iteratormod
 ###non_job_steps = ['help','dump']
 
 def do_help(cfg):
-    print 'usage: lcatr_auto [options]'
+    print('usage: lcatr_auto [options]')
     return 'help called'
 
 def do_dump(cfg):
-    print 'Configuration:'
+    print('Configuration:')
     for k,v in sorted(cfg.__dict__.items()):
-        print '%s: %s' % (k,v)
+        print('%s: %s' % (k,v))
     sys.exit(1)
 
 def cmdline(args):
@@ -40,7 +41,7 @@ def cmdline(args):
 
     ##steps = []
     kwds = {}
-    for opt,arg in optarg.__dict__.iteritems():
+    for opt,arg in optarg.__dict__.items():
         if not arg: continue
 
         kwds[opt] = arg

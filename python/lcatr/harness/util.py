@@ -2,6 +2,8 @@
 '''
 General utility stuff
 '''
+from __future__ import print_function
+from builtins import object
 
 import logging
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
@@ -33,7 +35,7 @@ class MovableLogger(object):
 
         self.l.setLevel(level)
 
-        print 'logging to: %s' % self.filepath
+        print('logging to: %s' % self.filepath)
         self.info('lcatr harness version %s' % __version__)
         return
 
@@ -87,7 +89,7 @@ def flush_logfile():
 
 
 def log_and_terminal(out):
-    print out
+    print(out)
     log.info(out)
 
 

@@ -5,6 +5,7 @@ processes, if they be written in Python.
 
 Note, module is not used by the rest of the harness.
 '''
+from past.builtins import basestring
 
 import os
 from glob import glob

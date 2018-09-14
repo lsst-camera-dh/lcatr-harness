@@ -2,12 +2,18 @@
 '''
 Interface with LIMS
 '''
+from __future__ import print_function
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import object
 import time
 import json
-from urllib import urlencode
-from urllib2 import urlopen
+from urllib.parse import urlencode
+from urllib.request import urlopen
 
-from util import log
+from .util import log
 
 API = {
     'base_path': 'Results',
@@ -59,7 +65,7 @@ class Results(object):
         if missing:
             msg = 'Not given enough info to statisfy LIMS API for %s: missing: %s' % (command, str(sorted(missing)))
             log.error(msg)
-            raise ValueError, msg
+            raise ValueError(msg)
         query = {k:cfg[k] for k in want}
         return query
 
@@ -76,14 +82,14 @@ class Results(object):
 
         url = self.lims_url + command
         
-        fp = urlopen(url, data=qdata)
+        fp = urlopen(url, data=qdata.encode('ascii'))
         page = fp.read()
         try:
             jres = json.loads(page)
-        except ValueError, msg:
+        except ValueError as msg:
             msg = 'Failed to load return page with qdata="%s" url="%s" got: "%s" (JSON error: %s)' %\
                 (qdata, url, page, msg)
-            print msg
+            print(msg)
             log.error(msg)
             raise
         return jres
@@ -104,16 +110,16 @@ class Results(object):
             if 'error' not in res:
                 msg = 'Incomplete response to LIMS register.  No jobid, no error'
                 log.error(msg)
-                raise ValueError, msg
+                raise ValueError(msg)
             else:
                 msg = 'Failed to register with LIMs: "%s"' % res['error']
                 log.error(msg)
-                raise ValueError, msg
+                raise ValueError(msg)
         jobid = res['jobid']
         if jobid is None:
             msg = 'Failed to register with LIMS: "%s"' % res['error']
             log.error(msg)
-            raise ValueError, msg
+            raise ValueError(msg)
         self.jobid = jobid
         if 'runNumber' in res:
             self.runNumber = res['runNumber']
@@ -135,21 +141,21 @@ class Results(object):
         """
         msg = 'Reregistering with jobid=%d' % jobid
         self.jobid = jobid
-        print msg
+        print(msg)
         log.info(msg)
         reg = self.make_query('status', status='registration', jobid=jobid)
-        if reg.has_key('error'):
+        if 'error' in reg:
             msg = 'Failed to request registration status for jobid %d (LIMS: %s)' % \
                 (jobid, reg['error'])
             log.error(msg)
-            raise ValueError, msg
+            raise ValueError(msg)
 
         upd = self.make_query('status', status='update', jobid=jobid)
-        if upd.has_key('error'):
+        if 'error' in upd:
             msg = 'Failed to request update status for jobid %d (LIMS: %s)' % \
                 (jobid, upd['error'])
             log.error(msg)
-            raise ValueError, msg
+            raise ValueError(msg)
 
         assert (jobid == reg['jobid'])
 
@@ -177,7 +183,7 @@ class Results(object):
         if not step in API['known_steps']:
             msg = 'Unknown status update step: "%s"' % step
             log.error(msg)
-            raise ValueError, msg
+            raise ValueError(msg)
         res = self.make_query('update', **kwds)
         return res['acknowledge']
 
