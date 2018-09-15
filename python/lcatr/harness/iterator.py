@@ -8,7 +8,7 @@ from __future__ import absolute_import
 try:
     from future import standard_library
     standard_library.install_aliases()
-    from builtins import str
+    #from builtins import str
     from builtins import object
 except ImportError:
     pass
@@ -160,17 +160,17 @@ class Iterator(object):
         while more:
             res = self.doQuery()
             #res = self.doFakeQuery()
-            if res['status'] == 'DONE':
+            if res[u'status'] == u'DONE':
                 print('All child jobs have been run')
                 more = False
                 return;
-            if res['status'] == 'CMD':
+            if res[u'status'] == 'CMD':
                 more = True
                 # json data seems to be returned in something
                 # which str.split() doesn't handle well
                 print('Begin execution of child job #', iJob)
                 #self.em.execute((res['command']).encode(u'ascii'), out=log_and_terminal)
-                self.em.execute((res['command']), out=log_and_terminal)
+                self.em.execute(str(res['command']), out=log_and_terminal)
                 print('Completed execution of child job #', iJob)
                 iJob += 1
             else:

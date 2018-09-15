@@ -335,12 +335,12 @@ class Modules(object):
                 return self.env[maybe]
         raise KeyError(cmd)
 
-
     def execute(self, cmdstr, out = log.debug):
         '''
         Execute the command string in the environment.
         '''
         from .commands import execute as comm_execute
+        print('cmdstr is: ', cmdstr)
         try:
             ret = comm_execute(cmdstr, self.env, out)
         except OSError:
