@@ -176,7 +176,7 @@ class Job(object):
         self.cfg.job_id = str(self.lims.jobid)
         miniDict = {}
         miniDict[u'LCATR_JOB_ID'] = str(self.lims.jobid)
-	if (self.lims.runNumber != None):
+        if (self.lims.runNumber != None):
             self.cfg.runNumber = str(self.lims.runNumber)
             miniDict[u'LCATR_RUN_NUMBER'] = str(self.lims.runNumber)
             util.log.info(u'Non-None value for lims runNumber: %s\n' % str(self.lims.runNumber))
@@ -324,7 +324,7 @@ class Job(object):
         # make a to-archive subdirectory.
         if os.path.exists(to_archive):
             raise RuntimeError(u'to-archive subdirectory in staging area already exists')
-	os.makedirs(to_archive)
+        os.makedirs(to_archive)
         new_src = src + to_archive + '/'
         # self.result is a list of dicts
         #  Assume it's well-formed by our lights, or we never should have

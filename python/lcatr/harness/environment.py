@@ -78,9 +78,9 @@ def guess_modules_path():
     ret = str(os.path.expandvars(u"$VIRTUAL_ENV/share"))
     mp = str(os.environ.get('MODULEPATH'))
     if mp:
-	ret += ':' + mp
+        ret += ':' + mp
 
-    print('Type of guessed MODULEPATH: ',type(ret))
+    #print('Type of guessed MODULEPATH: ',type(ret))
     return ret
 
 def resolve_modulepath(home, env = None, modpatharg = None):
@@ -91,8 +91,8 @@ def resolve_modulepath(home, env = None, modpatharg = None):
     if env:
         os.environ = env
 
-    print('Type of modpatharg: ', type(modpatharg))
-    print('Value of modpatharg:  ', modpatharg)
+    #print('Type of modpatharg: ', type(modpatharg))
+    #print('Value of modpatharg:  ', modpatharg)
     if not modpatharg:
         modpath = []
     elif isinstance(modpatharg,str):
@@ -102,7 +102,7 @@ def resolve_modulepath(home, env = None, modpatharg = None):
     else:
         modpath = modpatharg
 
-    print('Type of modpath (should be list) : %s', type(modpath))    
+    #print('Type of modpath (should be list) : %s', type(modpath))    
     try:
         fp = open(os.path.join(home, 'init/.modulespath'))
     except IOError:
@@ -113,7 +113,7 @@ def resolve_modulepath(home, env = None, modpatharg = None):
             line = line.strip()
             if not line: continue
             line = os.path.expandvars(line)
-            print('Type of expandvars line is ', type(line))
+            #print('Type of expandvars line is ', type(line))
             if line not in modpath:
                 modpath.append(str(line))
             continue
@@ -121,7 +121,7 @@ def resolve_modulepath(home, env = None, modpatharg = None):
 
     os.environ = saved_environ
 
-    print('Type of modpath as returned (should be list) : %s', type(modpath))    
+    #print('Type of modpath as returned (should be list) : %s', type(modpath))    
     return modpath
 
 
@@ -162,15 +162,18 @@ class Modules(object):
         environment for modules itself.  Raise RuntimeError if failed.
         '''
         home = guess_modules_home()
-        print('Type of guessed home: ', type(home))
-        if not home: raise RuntimeError, 'No modules home guessed'
+        #print('Type of guessed home: ', type(home))
+        if not home: 
+            raise RuntimeError('No modules home guessed')
 
         modcmd = guess_modules_cmd()
-        if not modcmd: raise RuntimeError, 'No modules command guessed'
+        if not modcmd: 
+            raise RuntimeError('No modules command guessed')
 
         version = guess_modules_version()
-        print('Result of guess_modules_version has type ', type(version))
-        if not version: raise RuntimeError, 'No modules version guessed'
+        #print('Result of guess_modules_version has type ', type(version))
+        if not version: 
+            raise RuntimeError('No modules version guessed')
 
         self.setup(home, modcmd, version)
         return
@@ -205,7 +208,7 @@ class Modules(object):
         self.cmdstr = cmd
 
         version = str(version)
-        print("updating self.env version with type ", type(version))
+        #print("updating self.env version with type ", type(version))
         self.env.update({
             'MODULESHOME': home,
             'MODULE_VERSION': version,
@@ -213,23 +216,23 @@ class Modules(object):
             'LOADEDMODULES': '',
             })
 
-        print('after update MODULESHOME env type is ', type(self.env['MODULESHOME']))
+        #print('after update MODULESHOME env type is ', type(self.env['MODULESHOME']))
         modpath = resolve_modulepath(home, env = self.env, modpatharg = modpath)
-        print('Type of modpath returned (should be list) : ', type(modpath))          
+        #print('Type of modpath returned (should be list) : ', type(modpath))          
         #print('Type of entry: ', type(modpath[0]))
         # insert lcatr job expectations
         modpath += [self.install_area]
 
-        for elt in modpath:
-            print('Type of %s is ' % elt, type(elt))
+        #for elt in modpath:
+        #    print('Type of %s is ' % elt, type(elt))
 
         joined = ':'.join(modpath)
-        print('Type of joined is ', type(joined))
+        #print('Type of joined is ', type(joined))
         self.env['MODULEPATH'] = ':'.join(modpath)
 
-        print('Type of self.env["MODULEPATH"]: ', type(self.env['MODULEPATH']))
+        #print('Type of self.env["MODULEPATH"]: ', type(self.env['MODULEPATH']))
         self.env['LCATR_MODULES'] = self.install_area + '/modulefiles'
-        print('type of self.env LCATR_MODULES is ', type(self.env['LCATR_MODULES']))
+        #print('type of self.env LCATR_MODULES is ', type(self.env['LCATR_MODULES']))
         return
 
     def command(self, flavor, *args):
@@ -243,7 +246,7 @@ class Modules(object):
         log.info('OUT:\nVVV\n%s\n^^^' % out)
         log.info('ERR:\nVVV\n%s\n^^^' % err)
 
-        return out
+        return out.decode('ascii')
 
     def command_outerr(self, flavor, *args):
         if type(args[0]) == type([]):
@@ -255,7 +258,9 @@ class Modules(object):
         msg = 'Running command: "%s", MODULEPATH="%s"' % \
             (' '.join(cmd), self.env['MODULEPATH'])
         log.info(msg)
-        for k,v in self.env.iteritems():
+        #for k,v in self.env.iteritems():
+        for k in self.env:
+            v = self.env[k]
             if (type(k) != str) : print('Key type is %s' % type(k))
             if (type(v) != str) : print('Value type is %s' % type(v))
             assert type(k) == str and type(v) == str, 'bad: %s:%s'%(k,v)
@@ -268,10 +273,11 @@ class Modules(object):
 
         # Check also for 'ERROR' because modulecmd lets errors sneak
         # by w/out an error return code
-        if status or 'ERROR' in err:
+        err_asc = err.decode('ascii')
+        if status or 'ERROR' in err_asc:
             msg = '%s\ncmd: "%s" with path: %s' % \
-                (err,' '.join(cmd), self.env['MODULEPATH'])
-            raise RuntimeError,msg
+                (err_asc,' '.join(cmd), self.env['MODULEPATH'])
+            raise RuntimeError(msg)
 
         return out,err,status
 
@@ -324,9 +330,10 @@ class Modules(object):
 
         var = cmd
         for maybe in [var, var.upper(), 'lcatr_'+var, 'LCATR_'+var.upper()]:
-            if self.env.has_key(maybe):
+            #if self.env.has_key(maybe):
+            if maybe in self.env:
                 return self.env[maybe]
-        raise KeyError,cmd
+        raise KeyError(cmd)
 
 
     def execute(self, cmdstr, out = log.debug):
@@ -353,8 +360,10 @@ class Modules(object):
 def cfg2em(cfg):
 
     env = dict(os.environ)  # calling environment
-    pars = cfg.__dict__.iteritems()
-    newenv = {'%s%s'%(cfg.envvar_prefix,k.upper()):v for k,v in pars}
+    #pars = cfg.__dict__.iteritems()
+    cfg_dict = cfg.__dict__
+    newenv = {'%s%s'%(cfg.envvar_prefix,k.upper()):cfg_dict[k] for k in cfg_dict}
+    #newenv = {'%s%s'%(cfg.envvar_prefix,k.upper()):v for k,v in pars}
     env.update(newenv)
 
     em = Modules(env)

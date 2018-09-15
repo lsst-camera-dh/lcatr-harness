@@ -33,7 +33,8 @@ def execute(cmdstr, env = None, out = None):
 
     CommandFailure is raised if return value is nonzero.
     '''
-    
+
+    print('Type of cmdstr is ', type(cmdstr) )
     if type(cmdstr) == type(""):
         cmdstr = cmdstr.strip().split()
 

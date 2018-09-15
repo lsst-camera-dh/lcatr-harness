@@ -21,8 +21,11 @@ class MovableLogger(object):
         self.level = level
         if self.filepath==None:
             now_iso = datetime.datetime.now().isoformat()
-            now_iso = string.join(string.split(now_iso, ':'), '')
-            self.filepath = string.join(string.split(now_iso, '.'), 'us') + '.log'
+            now_iso = ''.join(':'.split(now_iso))
+            #now_iso = string.join(string.split(now_iso, ':'), '')
+            self.filepath = 'us'.join('.'.split(now_iso)) + '.log'
+
+            #self.filepath = string.join(string.split(now_iso, '.'), 'us') + '.log'
 
         self.l = logging.getLogger(name)
 
