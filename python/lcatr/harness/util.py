@@ -51,7 +51,7 @@ class MovableLogger(object):
     def move_lf(self, newpath):
         self.fh.close()
         self.l.removeHandler(self.fh)
-        shutil.move(self.filepath, newpath)        
+        shutil.move(self.filepath, newpath, copy_function=shutil.copy)
         self.filepath = newpath
         newfh = logging.FileHandler(newpath)
         newfh.setFormatter(self.fmt)
