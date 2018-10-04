@@ -1,4 +1,5 @@
-from remote import *
+from __future__ import absolute_import
+from .remote import *
 
 def cmd(cmdstr, retries=1):
     '''

@@ -3,6 +3,13 @@ LSST CCD Acceptance Testing Running of Jobs
 ===========================================
 
 '''
+from __future__ import print_function
+try:
+    from builtins import str
+    from builtins import object
+except ImportError:
+    # builtins not natively in python 2
+    pass
 
 import os
 from lcatr.harness import remote, environment, lims, util
@@ -14,7 +21,7 @@ else:
     from lcatr.harness import remote_irods as remote
     
 def log_and_terminal(out):
-    print out
+    print(out)
     util.log.info(out)
 
 class Job(object):
@@ -37,33 +44,33 @@ class Job(object):
     '''
 
     required_parameters = [
-        'lims_url',   # Base LIMS URL
-        'job',        # Canonical name of the job
-        'version',    # Test software version string (git tag) 
-        'operator',   # User name of person operating/running the test
-        'host',       # Name of host running this job
-        'stamp',      # A time_t seconds stamping when job ran
-        'stage_root', # The LCATR_ROOT on local machine
-        'archive_root', # The LCATR_ROOT base of the archive
-        'archive_host', # The name of the machine hosting the archive
-        'archive_user', # Login name of user that can write to archive
-        'unit_type',    # type of unit (eg, CCD/RTM)
-        'unit_id',      # The unique unit identifier
-        'install_area', # base to where software is installed
+        u'lims_url',   # Base LIMS URL
+        u'job',        # Canonical name of the job
+        u'version',    # Test software version string (git tag) 
+        u'operator',   # User name of person operating/running the test
+        u'host',       # Name of host running this job
+        u'stamp',      # A time_t seconds stamping when job ran
+        u'stage_root', # The LCATR_ROOT on local machine
+        u'archive_root', # The LCATR_ROOT base of the archive
+        u'archive_host', # The name of the machine hosting the archive
+        u'archive_user', # Login name of user that can write to archive
+        u'unit_type',    # type of unit (eg, CCD/RTM)
+        u'unit_id',      # The unique unit identifier
+        u'install_area', # base to where software is installed
         ]
 
 
     # The list of steps and how/whether to report to LIMS
-    all_steps = ['configure','register','stage','produce','validate','archive','ingest','purge']
-    report_as = [None,'configured','staged','produced','validated','archived',None, 'purged']
+    all_steps = [u'configure',u'register',u'stage',u'produce',u'validate',u'archive',u'ingest',u'purge']
+    report_as = [None,u'configured',u'staged',u'produced',u'validated',u'archived',None, u'purged']
 
     def __init__(self, cfg):
         '''
         Create a test job with a config.Config object
         '''
         if not cfg.complete(Job.required_parameters):
-            raise ValueError,'Given incomplete configuration, missing: %s' % \
-                cfg.missing(Job.required_parameters)
+            raise ValueError('Given incomplete configuration, missing: %s' % \
+                cfg.missing(Job.required_parameters))
 
         self.cfg = cfg
         self.em = None
@@ -89,28 +96,28 @@ class Job(object):
             util.log.debug('Running step "%s"' % step)
             try:
                 meth()
-            except Exception,err:
+            except Exception as err:
                 msg = 'Error with step %s: %s' % (step, err)
-                print msg
+                print(msg)
                 util.log.error(msg)
                 if self.lims and stepped:
                     ret = self.lims.update(step=stepped,status=msg)
                     if ret:
                         util.log.error(str(ret))
-                        print str(ret)
+                        print(str(ret))
                 ix = steps.index(step)
                 if (ix > steps.index('configure')) and (ix < steps.index('purge')):
                     self._archive_log()
                 raise
             else:
-                msg = 'Step %s completed' % step
-                print msg
+                msg = u'Step %s completed' % step
+                print(msg)
                 util.log.info(msg)
                 if self.lims and stepped: 
                     ret = self.lims.update(step=stepped)
                     if ret:
                         util.log.error(str(ret))
-                        print str(ret)
+                        print(str(ret))
             continue
         return
             
@@ -147,20 +154,20 @@ class Job(object):
         modfile = os.path.join(self.cfg.job, self.cfg.version)
         try:
             self.em.load(modfile)
-        except RuntimeError, msg:
-            print 'Got runtime error: "%s"' % msg
-            for k,v in self.em.env.iteritems():
+        except RuntimeError as msg:
+            print(u'Got runtime error: "%s"' % msg)
+            for k,v in self.em.env.items():
                 if k.startswith(self.cfg.envvar_prefix):
-                    print '%s = %s' % (k,v)
+                    print(u'%s = %s' % (k,v))
             raise
 
 
         # This needs to be imported so our own attempts at validating
         # the result summary data can find potential schema files.
-        if self.em.env.has_key('LCATR_SCHEMA_PATH'):
-            os.environ['LCATR_SCHEMA_PATH'] = self.em.env['LCATR_SCHEMA_PATH']
-        print 'Loading schema with schema path: "%s"' % \
-            self.em.env.get('LCATR_SCHEMA_PATH')
+        if u'LCATR_SCHEMA_PATH' in self.em.env:
+            os.environ[u'LCATR_SCHEMA_PATH'] = self.em.env[u'LCATR_SCHEMA_PATH']
+        print(u'Loading schema with schema path: "%s"' % \
+            self.em.env.get(u'LCATR_SCHEMA_PATH'))
         lcatr.schema.load_all()
 
         self._check_archive()
@@ -172,16 +179,16 @@ class Job(object):
         self.lims = lims.register(**self.cfg.__dict__)
         self.cfg.job_id = str(self.lims.jobid)
         miniDict = {}
-        miniDict['LCATR_JOB_ID'] = str(self.lims.jobid)
-	if (self.lims.runNumber != None):
+        miniDict[u'LCATR_JOB_ID'] = str(self.lims.jobid)
+        if (self.lims.runNumber != None):
             self.cfg.runNumber = str(self.lims.runNumber)
-            miniDict['LCATR_RUN_NUMBER'] = str(self.lims.runNumber)
-            util.log.info('Non-None value for lims runNumber: %s\n' % str(self.lims.runNumber))
+            miniDict[u'LCATR_RUN_NUMBER'] = str(self.lims.runNumber)
+            util.log.info(u'Non-None value for lims runNumber: %s\n' % str(self.lims.runNumber))
         else:
-            util.log.info('From do_register: no run number found\n')
+            util.log.info(u'From do_register: no run number found\n')
         if (self.lims.rootActivityId != None):
             self.cfg.rootActivityId = str(self.lims.rootActivityId)
-            miniDict['LCATR_ROOT_ACTIVITY_ID'] = self.lims.rootActivityId
+            miniDict[u'LCATR_ROOT_ACTIVITY_ID'] = self.lims.rootActivityId
         self.em.update(miniDict)
         
         return
@@ -191,50 +198,50 @@ class Job(object):
 
         dst_root = self.cfg.stage_root
         if not os.path.exists(dst_root):
-            msg = 'Local stage root directory does not exists: %s' % dst_root
-            raise RuntimeError, msg
+            msg = u'Local stage root directory does not exists: %s' % dst_root
+            raise RuntimeError(msg)
         if  self.lims.runNumber != None:
             # make new dict which includes runNumber
             augmentedinfo = dict(depinfo)
             if self.forceMatch:
-                if depinfo['runNumber'] != self.lims.runNumber:
-                    raise RuntimeError, 'dependent job not in current run'
+                if depinfo[u'runNumber'] != self.lims.runNumber:
+                    raise RuntimeError(u'dependent job not in current run')
 
-            augmentedinfo['runNumber'] = depinfo['runNumber']
+            augmentedinfo[u'runNumber'] = depinfo[u'runNumber']
             path = self.cfg.run_subdir_policy % augmentedinfo
         else:
             path = self.cfg.subdir_policy % depinfo
-        rpath = self.cfg.s("%(archive_root)s/") + path
-        src = self.cfg.s('%(archive_user)s@%(archive_host)s:') + rpath
+        rpath = self.cfg.s(u"%(archive_root)s/") + path
+        src = self.cfg.s(u'%(archive_user)s@%(archive_host)s:') + rpath
         dst = os.path.join(dst_root, path)
 
 
         if os.path.exists(dst):
-            util.log.warning('Directory already staged: "%s"' % dst)
+            util.log.warning(u'Directory already staged: "%s"' % dst)
             return dst
         os.makedirs(dst)
 
-        util.log.info('Staging from "%s" to "%s' % (src, dst))
+        util.log.info(u'Staging from "%s" to "%s' % (src, dst))
         rstat = remote.stat(rpath, host=self.cfg.archive_host, user=self.cfg.archive_user)
         if rstat[0]:
-            msg = 'Failed to stat remote archive directory: %s' % src
-            raise RuntimeError, msg
+            msg = u'Failed to stat remote archive directory: %s' % src
+            raise RuntimeError(msg)
 
         dst = os.path.dirname(dst)
         ret = remote.rsync(src,dst)
         if ret[0]:
-            raise RuntimeError, 'Stage in failed with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret
+            raise RuntimeError(u'Stage in failed with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret)
 
         return dst
 
     def do_stage(self):
         'Ready the stage.'
 
-        wd = self.cfg.subdir('stage')
+        wd = self.cfg.subdir(u'stage')
         if os.path.exists(wd):
-            msg = 'Working directory already exists: %s' % wd
+            msg = u'Working directory already exists: %s' % wd
             util.log.error(msg)
-            raise RuntimeError, msg
+            raise RuntimeError(msg)
 
         # Find out if we're in Prod database or not
         try:
@@ -244,9 +251,9 @@ class Job(object):
             self.prod = False
 
         self.forceMatch = self.prod
-        if os.environ.get('LCATR_FORCE_RUN_MATCH') is not None:
+        if os.environ.get(u'LCATR_FORCE_RUN_MATCH') is not None:
             if not self.prod:
-                util.log.info('LCATR_FORCE_RUN_MATCH is set for non-Prod db')
+                util.log.info(u'LCATR_FORCE_RUN_MATCH is set for non-Prod db')
                 self.forceMatch = True
 
         deppath = []
@@ -255,24 +262,24 @@ class Job(object):
             deppath.append(depdir)
             continue
 
-        util.log.info('Creating working directory: %s' % wd)
+        util.log.info(u'Creating working directory: %s' % wd)
         os.makedirs(wd)
 
         (oldname, sep, oldtype) = util.get_logfilepath().partition('.')
-        newlog = wd + '/' + oldname + '_' + self.cfg.job_id + sep + oldtype
-        util.log.info('Moving log to: %s' % newlog)
+        newlog = wd + u'/' + oldname + '_' + self.cfg.job_id + sep + oldtype
+        util.log.info(u'Moving log to: %s' % newlog)
         util.move_logfile(newlog)
-        print 'Moved log to ' + newlog
+        print(u'Moved log to ' + newlog)
 
-        self.em.env['LCATR_DEPENDENCY_PATH'] = ':'.join(deppath)
+        self.em.env[u'LCATR_DEPENDENCY_PATH'] = ':'.join(deppath)
         return
 
     def go_working_dir(self):
         '''
         Change to the working directory.
         '''
-        wd = self.cfg.subdir('stage')
-        util.log.debug('Changing to directory: %s' % wd)
+        wd = self.cfg.subdir(u'stage')
+        util.log.debug(u'Changing to directory: %s' % wd)
         os.chdir(wd)
         return
 
@@ -306,9 +313,9 @@ class Job(object):
         rstat = remote.stat(rdir,
                             host=self.cfg.archive_host, user=self.cfg.archive_user)
         if rstat[0]:
-            msg = 'Remote archive root or logdir does not exist: %s@%s:%s' % \
+            msg = u'Remote archive root or logdir does not exist: %s@%s:%s' % \
                 (self.cfg.archive_user, self.cfg.archive_host,rdir)
-            raise RuntimeError, msg
+            raise RuntimeError(msg)
         return
 
     def do_archive(self):
@@ -316,19 +323,19 @@ class Job(object):
 
         self._check_archive()
 
-        to_archive = 'to_archive'
-        src = self.cfg.subdir('stage') + '/'
+        to_archive = u'to_archive'
+        src = self.cfg.subdir(u'stage') + u'/'
         # make a to-archive subdirectory.
         if os.path.exists(to_archive):
-            raise RuntimeError, 'to-archive subdirectory in staging area already exists'
-	os.makedirs(to_archive)
+            raise RuntimeError(u'to-archive subdirectory in staging area already exists')
+        os.makedirs(to_archive)
         new_src = src + to_archive + '/'
         # self.result is a list of dicts
         #  Assume it's well-formed by our lights, or we never should have
         #  gotten this far
         for d in self.result:
-            if d['schema_name'] == 'fileref':
-                path = d['path']
+            if d[u'schema_name'] == u'fileref':
+                path = d[u'path']
                 (dirn, basen) = os.path.split(path)
                 destdir = to_archive
                 if len(dirn) > 0:
@@ -336,38 +343,37 @@ class Job(object):
                     if not os.path.exists(destdir):
                         os.makedirs(destdir)
                 os.link(path, os.path.join(destdir, basen))
-        os.link('summary.lims', os.path.join(to_archive, 'summary.lims'))
+        os.link(u'summary.lims', os.path.join(to_archive, u'summary.lims'))
                 
-        if os.environ.get('IRODS_ARCHIVE') is not None:
+        if os.environ.get(u'IRODS_ARCHIVE') is not None:
             dst = "i:"
         else:
-            if self.cfg.archive_host != 'localhost':
-                dst = self.cfg.s('%(archive_user)s@%(archive_host)s:')
+            if self.cfg.archive_host != u'localhost':
+                dst = self.cfg.s(u'%(archive_user)s@%(archive_host)s:')
             else:
                 dst=""
-        dst += self.cfg.subdir('archive') + '/'
+        dst += self.cfg.subdir(u'archive') + u'/'
         
         if self.archive_exists():
-            msg = 'Archive destination directory already exists: %s' % dst
-            raise RuntimeError, msg
+            msg = u'Archive destination directory already exists: %s' % dst
+            raise RuntimeError(msg)
 
 
-        util.log.info('Making archive directory "%s' % dst)
-        ret = remote.mkdir(self.cfg.subdir('archive'),
+        util.log.info(u'Making archive directory "%s' % dst)
+        ret = remote.mkdir(self.cfg.subdir(u'archive'),
                            self.cfg.archive_host, 
                            self.cfg.archive_user)
         if ret[0]:
-            raise RuntimeError, \
-                'Failed to make archive directory with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret
-        util.log.info('Archiving from "%s" to "%s' % (new_src, dst))
+            raise RuntimeError(u'Failed to make archive directory with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret)
+        util.log.info(u'Archiving from "%s" to "%s' % (new_src, dst))
         
-        if os.environ.get('IRODS_ARCHIVE') is not None or (self.cfg.archive_host != 'localhost'):
+        if os.environ.get(u'IRODS_ARCHIVE') is not None or (self.cfg.archive_host != u'localhost'):
             ret = remote.rsync(new_src,dst)
         else:
-            new_src += '*'
+            new_src += u'*'
             ret = remote.cp(new_src, dst, True)
         if ret[0]:
-            raise RuntimeError, 'Archive failed with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret
+            raise RuntimeError(u'Archive failed with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret)
         ## If it works, clean up with  shutil.rmtree(to_archive)
         return
     
@@ -377,7 +383,7 @@ class Job(object):
         '''
         ret = self.lims.ingest(self.result) # self.result filled in do_validate()
         if ret:
-            raise RuntimeError, str(ret)
+            raise RuntimeError(str(ret))
         
         self._archive_log()
         return
@@ -389,7 +395,7 @@ class Job(object):
         '''
         Return True if archive directory exists.
         '''
-        s,o,e = remote.stat(self.cfg.subdir('archive'),
+        s,o,e = remote.stat(self.cfg.subdir(u'archive'),
                             self.cfg.archive_host,
                             self.cfg.archive_user)
         if s: 
@@ -404,22 +410,22 @@ class Job(object):
         try:
             self._check_archive(logdir)
         except RuntimeError:
-            util.log.info('Archive logs directory not found; attempt to create')
+            util.log.info(u'Archive logs directory not found; attempt to create')
             ret = remote.mkdir((self.cfg.archivelogdir()+logdir),
                                self.cfg.archive_host,
                                self.cfg.archive_user)
             if ret[0]: 
-                util.log.warning('Failed to make archive log dir with %d:\nOUPUT=\n%s\nERROR=\n%s' % ret)
+                util.log.warning(u'Failed to make archive log dir with %d:\nOUPUT=\n%s\nERROR=\n%s' % ret)
         
         util.flush_logfile()
         #  scp to archive unless local
         src = util.get_logfilepath()
-        if self.cfg.archive_host == 'localhost' and os.environ.get('IRODS_ARCHIVE') is None:
+        if self.cfg.archive_host == u'localhost' and os.environ.get(u'IRODS_ARCHIVE') is None:
             dst = self.cfg.archivelogdir() + logdir
             return remote.cp(src, dst)
             
         else:
-            dst = self.cfg.s('%(archive_user)s@%(archive_host)s:')
+            dst = self.cfg.s(u'%(archive_user)s@%(archive_host)s:')
             dst += self.cfg.archivelogdir() + logdir
 
             return remote.scp(src, dst)

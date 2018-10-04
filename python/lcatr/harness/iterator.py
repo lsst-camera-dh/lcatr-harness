@@ -3,14 +3,28 @@
 Repeatedly query eTraveler for next bit of work, until done.
 Similar in some respects to lims.py
 '''
+from __future__ import print_function
+from __future__ import absolute_import
+try:
+    from future import standard_library
+    standard_library.install_aliases()
+    #from builtins import str
+    from builtins import object
+except ImportError:
+    pass
+
 import time
 import json
-from urllib import urlencode
-from urllib2 import urlopen
+try:
+    from urllib.parse import urlencode
+    from urllib.request import urlopen
+except ImportError:
+    from urllib import urlencode
+    from urllib2 import urlopen
 
-from util import log, log_and_terminal
+from .util import log, log_and_terminal
 
-from lcatr.harness import environment
+from lcatr.harness import environment as l_environment
 
 class Iterator(object):
     '''
@@ -23,24 +37,24 @@ class Iterator(object):
     - loop until no more jobs to run
     '''
     required_parameters = [
-        'lims_url',   # Base LIMS URL
-        'container_id', # activity id of container process in traveler
-        'operator',   # User name of person operating/running the test
+        u'lims_url',   # Base LIMS URL
+        u'container_id', # activity id of container process in traveler
+        u'operator',   # User name of person operating/running the test
         ]
 
     API = {
-        'base_path': 'Results',
+        u'base_path': u'Results',
 
         # command and its parameters
-        'nextJob' : ['containerid', 'operator'],
+        u'nextJob' : [u'containerid', u'operator'],
         }
     def __init__(self, cfg):
         '''
         Create with a config.Config object
         '''
         if not cfg.complete(Iterator.required_parameters):
-            raise ValueError,'Given incomplete configuration, missing: %s' % \
-                cfg.missing(Iterator.required_parameters)
+            raise ValueError(u'Given incomplete configuration, missing: %s' % \
+                cfg.missing(Iterator.required_parameters))
 
         self.cfg = cfg
         self.em = None
@@ -58,17 +72,17 @@ class Iterator(object):
         '''
         self.containerid = None
         if url[-1] == '/': url = url[:-1]
-        if not url.endswith(self.API['base_path']):
-            url += '/' + self.API['base_path']
-        url += '/'
+        if not url.endswith(self.API[u'base_path']):
+            url += u'/' + self.API[u'base_path']
+        url += u'/'
         url += command
 
         self.et_url = url
-        log.info('Using eTraveler URL: "%s"' % url)
-        query = self.makeParams('nextJob', **self.cfg.__dict__)
+        log.info(u'Using eTraveler URL: "%s"' % url)
+        query = self.makeParams(u'nextJob', **self.cfg.__dict__)
         jdata = json.dumps(query)
-        self.qdata = urlencode({'jsonObject':jdata})
-        log.debug('Query LIMS "%s" with json="%s", query="%s"' % (command, jdata, self.qdata))
+        self.qdata = urlencode({u'jsonObject':jdata})
+        log.debug(u'Query LIMS "%s" with json="%s", query="%s"' % (command, jdata, self.qdata))
 
 
     def makeParams(self, command, **kwds):
@@ -77,13 +91,13 @@ class Iterator(object):
         with command or raise ValueError.
         '''
         cfg = dict(kwds, stamp=int(time.time()), 
-                   containerid=kwds['container_id'])
+                   containerid=kwds[u'container_id'])
         want = set(self.API[command])
         missing = want.difference(cfg)
         if missing:
-            msg = 'Not given enough info to statisfy LIMS API for %s: missing: %s' % (command, str(sorted(missing)))
+            msg = u'Not given enough info to statisfy LIMS API for %s: missing: %s' % (command, str(sorted(missing)))
             log.error(msg)
-            raise ValueError, msg
+            raise ValueError(msg)
         query = {k:cfg[k] for k in want}
         return query
 
@@ -93,8 +107,8 @@ class Iterator(object):
         create environment from configuration
         make up the http post
         '''
-        self.em = environment.cfg2em(self.cfg)
-        self.request = self.createQuery(self.cfg.lims_url, 'nextJob')
+        self.em = l_environment.cfg2em(self.cfg)
+        self.request = self.createQuery(self.cfg.lims_url, u'nextJob')
 
 
 
@@ -117,14 +131,14 @@ class Iterator(object):
 
         # Maybe should enclose in try... in case URLError is thrown?
         # Also check if return is None
-        fp = urlopen(self.et_url, data=self.qdata)
+        fp = urlopen(self.et_url, data=(self.qdata).encode('ascii'))
         page = fp.read()
         try:
-            jres = json.loads(page)
-        except ValueError, msg:
-            msg = 'Failed to load return page with qdata="%s" url="%s" got: "%s" (JSON error: %s)' %\
+            jres = json.loads(page.decode('ascii'))
+        except ValueError as msg:
+            msg = u'Failed to load return page with qdata="%s" url="%s" got: "%s" (JSON error: %s)' %\
                 (self.qdata, self.et_url, page, msg)
-            print msg
+            print(msg)
             log.error(msg)
             raise
         return jres
@@ -133,13 +147,13 @@ class Iterator(object):
     def doFakeQuery(self):
         cmdstring = None 
         if self.iFake < self.nFake:
-            cmdstring = 'echo Here is command number ' + str(self.iFake)
-            status = 'CMD'
+            cmdstring = u'echo Here is command number ' + str(self.iFake)
+            status = u'CMD'
             self.iFake += 1
         else:
-            status = 'DONE'
+            status = u'DONE'
             cmdstring =''
-        retDict = {'status' : status, 'command' : cmdstring}
+        retDict = {u'status' : status, u'command' : cmdstring}
         return retDict
 
 
@@ -150,17 +164,18 @@ class Iterator(object):
         while more:
             res = self.doQuery()
             #res = self.doFakeQuery()
-            if res['status'] == 'DONE':
-                print 'All child jobs have been run'
+            if res[u'status'] == u'DONE':
+                print('All child jobs have been run')
                 more = False
                 return;
-            if res['status'] == 'CMD':
+            if res[u'status'] == 'CMD':
                 more = True
                 # json data seems to be returned in something
                 # which str.split() doesn't handle well
-                print "Begin execution of child job #", iJob
-                self.em.execute((res['command']).encode('ascii'), out=log_and_terminal)
-                print "Completed execution of child job #", iJob
+                print('Begin execution of child job #', iJob)
+                #self.em.execute((res['command']).encode(u'ascii'), out=log_and_terminal)
+                self.em.execute(str(res['command']), out=log_and_terminal)
+                print('Completed execution of child job #', iJob)
                 iJob += 1
             else:
                 more = False

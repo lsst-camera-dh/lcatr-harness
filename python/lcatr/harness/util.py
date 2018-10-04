@@ -2,6 +2,11 @@
 '''
 General utility stuff
 '''
+from __future__ import print_function
+try:
+    from builtins import object
+except ImportError:
+    pass
 
 import logging
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
@@ -19,8 +24,11 @@ class MovableLogger(object):
         self.level = level
         if self.filepath==None:
             now_iso = datetime.datetime.now().isoformat()
-            now_iso = string.join(string.split(now_iso, ':'), '')
-            self.filepath = string.join(string.split(now_iso, '.'), 'us') + '.log'
+            now_iso = ''.join(now_iso.split(':'))
+            #now_iso = string.join(string.split(now_iso, ':'), '')
+            self.filepath = 'us'.join(now_iso.split('.')) + '.log'
+            #print('From MovableLogger __init__ filepath is: ', self.filepath)
+            #self.filepath = string.join(string.split(now_iso, '.'), 'us') + '.log'
 
         self.l = logging.getLogger(name)
 
@@ -33,7 +41,7 @@ class MovableLogger(object):
 
         self.l.setLevel(level)
 
-        print 'logging to: %s' % self.filepath
+        print('logging to: %s' % self.filepath)
         self.info('lcatr harness version %s' % __version__)
         return
 
@@ -46,7 +54,11 @@ class MovableLogger(object):
     def move_lf(self, newpath):
         self.fh.close()
         self.l.removeHandler(self.fh)
-        shutil.move(self.filepath, newpath)        
+        try:
+            shutil.move(self.filepath, newpath, copy_function=shutil.copy)
+        except TypeError:
+            # copy_function keyword not used in python 2
+            shutil.move(self.filepath, newpath)
         self.filepath = newpath
         newfh = logging.FileHandler(newpath)
         newfh.setFormatter(self.fmt)
@@ -87,7 +99,7 @@ def flush_logfile():
 
 
 def log_and_terminal(out):
-    print out
+    print(out)
     log.info(out)
 
 

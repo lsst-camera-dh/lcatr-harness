@@ -25,7 +25,7 @@ def __make_connection(writer=False, cnfPath=None, debug=False):
         if 'ETAPI_DB' in os.environ:
             db = os.environ.get('ETAPI_DB')
             if db == 'Prod':
-                raise EtWrapperConnectionError, "May not access Prod database with fake eTraveler"
+                raise EtWrapperConnectionError("May not access Prod database with fake eTraveler")
         # look for alternate settings in environment variables
         #    ETAPI_EXPERIMENT -- don't bother for now; not supported by API
         #    ETAPI_DEVSERVER     --     if defined, use dev server
@@ -44,7 +44,7 @@ def __make_connection(writer=False, cnfPath=None, debug=False):
                 db = cmps[cmps.index('eTraveler') + 1]
             else:
                 msg = "Inappropriate value for LCATR_LIMS_URL: " + url 
-                raise EtWrapperConnectionError, msg
+                raise EtWrapperConnectionError(msg)
     
     if (writer) and (cnfPath != None):
         return Connection(operator, db, prodServer, cnfPath=cnfPath)
@@ -186,7 +186,7 @@ def getComponentRuns(htype=None, experimentSN=None):
         return conn.getComponentRuns(htype=os.environ.get('LCATR_UNIT_TYPE'),
                                      experimentSN=os.environ.get('LCATR_UNIT_ID'))
     if htype==None:
-        raise ValueError, "et_wrapper.getComponentRuns: Missing htype argument"
+        raise ValueError("et_wrapper.getComponentRuns: Missing htype argument")
     return conn.getComponentRuns(htype=htype, experimentSN=experimentSN)
 
 def getHardwareInstances(htype, experimentSN=None, hardwareLabels=None):

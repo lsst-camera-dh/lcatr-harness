@@ -2,10 +2,11 @@
 '''
 Execute other programs.
 '''
+from __future__ import absolute_import
 
 import os
 from subprocess import Popen, PIPE, STDOUT
-from util import log
+from .util import log
 
 class CommandFailure(Exception):
     'Thrown when a command fails to run successfully'
@@ -32,7 +33,8 @@ def execute(cmdstr, env = None, out = None):
 
     CommandFailure is raised if return value is nonzero.
     '''
-    
+
+    #print('Type of cmdstr is ', type(cmdstr) )
     if type(cmdstr) == type(""):
         cmdstr = cmdstr.strip().split()
 
@@ -52,7 +54,7 @@ def execute(cmdstr, env = None, out = None):
     try:
         proc = Popen(cmdstr, stdout=PIPE, stderr=STDOUT, 
                      universal_newlines=True, env=env)
-    except OSError,err:
+    except OSError as err:
         log.warning(err)
         log.warning('cmd: "%s"' % ' '.join(cmdstr))
         raise
@@ -82,6 +84,6 @@ def execute(cmdstr, env = None, out = None):
     err = 'Command: "%s" failed with code %d' % (' '.join(cmdstr), res)
     log.warning(err)
     log.warning('Running environment:\n\t%s' % '\n\t'.join(['%s: %s'%i for i in sorted(env.items())]))
-    raise CommandFailure, err
+    raise CommandFailure(err)
 
 

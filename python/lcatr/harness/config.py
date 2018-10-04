@@ -2,23 +2,30 @@
 '''
 Configuration of a job
 '''
+from __future__ import print_function
+from __future__ import absolute_import
+#from future import standard_library
+#standard_library.install_aliases()
+#from builtins import str
+#from builtins import map
+#from builtins import object
 
 import os
 import sys
 import time
 import socket                   # for hostname
-from ConfigParser import SafeConfigParser, NoSectionError
+from configparser import SafeConfigParser, NoSectionError
 
-import environment
+from . import environment
 
 def dump_dict(msg,d):
-    print msg
-    for k,v in d.iteritems():
-        print '\t%s:%s'%(k,v)
+    print(msg)
+    for k,v in d.items():
+        print(u'\t%s:%s'%(k,v))
 
 def resolve_files(defaults, **kwds):
     files = list(defaults)
-    for what in ['config','configs','filename','filenames']:
+    for what in [u'config',u'configs',u'filename',u'filenames']:
         fn = kwds.get(what)
         if not fn: continue
         if isinstance(fn,str): 
@@ -27,8 +34,8 @@ def resolve_files(defaults, **kwds):
         del kwds[what]
         continue
     #print 'Trying files:',' '.join(files)
-    files = map(os.path.expanduser,files)
-    files = map(os.path.expandvars,files)
+    files = list(map(os.path.expanduser,files))
+    files = list(map(os.path.expandvars,files))
     return files, kwds
 
 
@@ -41,9 +48,9 @@ class Config(object):
 
     # Policy definition of the layout of a result's output relative to
     # ccdtest_root:
-    subdir_policy = '%(unit_type)s/%(unit_id)s/%(job)s/%(version)s/%(job_id)s'
+    subdir_policy = u'%(unit_type)s/%(unit_id)s/%(job)s/%(version)s/%(job_id)s'
     # Alternate layout when run number is available
-    run_subdir_policy = '%(unit_type)s/%(unit_id)s/%(runNumber)s/%(job)s/%(version)s/%(job_id)s'
+    run_subdir_policy = u'%(unit_type)s/%(unit_id)s/%(runNumber)s/%(job)s/%(version)s/%(job_id)s'
 
     # places to look for RC files.
     default_config_files = [
@@ -123,7 +130,7 @@ class Config(object):
         cfg = {}
 
         # all matching environment variables 
-        for k,v in os.environ.iteritems():
+        for k,v in os.environ.items():
             if not k.startswith(Config.envvar_prefix): 
                 continue
             name = k[len(Config.envvar_prefix):]
@@ -136,7 +143,7 @@ class Config(object):
         files, kwds = resolve_files(self.default_config_files, **kwds)
         scp = SafeConfigParser()
         used = scp.read(files)
-        print 'Loaded configuration files:',' '.join(used)
+        print('Loaded configuration files:',' '.join(used))
         #dump_dict('Defaults:',scp.defaults())
         cfg.update(scp.defaults())
         #dump_dict('After cfgfile',cfg)
@@ -151,16 +158,16 @@ class Config(object):
             if not scp.has_section(secname): 
                 return
             for k,v in scp.items(secname):
-                if cfg.has_key(k):
+                if k in cfg:
                     if v == cfg[k]: continue
-                    print 'Default value of %s = %s overridden by %s' % (k,v,cfg[k])
+                    print(u'Default value of %s = %s overridden by %s' % (k,v,cfg[k]))
                     continue
                 cfg[k] = v
                 #print '\tnamed section: %s=%s' %(k,cfg[k])
                 resolve_section(k,v)
                 continue
             return
-        for param in cfg.keys():
+        for param in list(cfg.keys()):
             value = cfg[param]
             resolve_section(param,value)
             continue
@@ -170,7 +177,7 @@ class Config(object):
         #dump_dict('Final', self.__dict__)
 
         for imp in Config.allow_implicit:
-            meth = eval ("self.guess_%s"%imp)
+            meth = eval ('self.guess_%s'%imp)
             meth()
             continue
 
@@ -194,40 +201,42 @@ class Config(object):
         return self.operator
 
     def guess_stamp(self):
-        if hasattr(self,'stamp'): return self.stamp
+        if hasattr(self,'stamp'): return str(self.stamp)
         self.stamp = str(time.time())
         return self.stamp
 
     def guess_stage_root(self):
-        if hasattr(self,'stage_root'): return self.stage_root
+        if hasattr(self,'stage_root'): return str(self.stage_root)
         self.stage_root = os.getcwd()
         return self.stage_root
 
     def guess_install_area(self):
-        if hasattr(self,'install_area'): return self.install_area
+        if hasattr(self,'install_area'): return str(self.install_area)
         ve = os.environ.get('VIRTUAL_ENV','')
         self.install_area = ve + '/share' if ve else None
-        return self.install_area
+        return str(self.install_area)
 
     def guess_modules_home(self):
-        if hasattr(self,'modules_home'): return self.modules_home
+        if hasattr(self,'modules_home'): return str(self.modules_home)
         self.modules_home = environment.guess_modules_home()
-        return self.modules_home
+        return str(self.modules_home)
 
     def guess_modules_version(self):
-        if hasattr(self,'modules_version'): return self.modules_version
-        self.modules_version = environment.guess_modules_version()
+        if hasattr(self,'modules_version'): 
+            self.modules_version = str(self.modules_version)
+            return self.modules_version
+        self.modules_version = str(environment.guess_modules_version())
         return self.modules_version
 
     def guess_modules_cmd(self):
-        if hasattr(self,'modules_cmd'): return self.modules_cmd
+        if hasattr(self,'modules_cmd'): return str(self.modules_cmd)
         self.modules_cmd = environment.guess_modules_cmd()
         return self.modules_cmd
 
     def guess_modules_path(self):
-        if hasattr(self,'modules_path'): return self.modules_path
+        if hasattr(self,'modules_path'): return str(self.modules_path)
         self.modules_path = environment.guess_modules_path()
-        return self.modules_path
+        return str(self.modules_path)
 
     def complete(self, req = None):
         'Return True if all configuration parameters are specified.'

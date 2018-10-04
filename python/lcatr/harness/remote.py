@@ -3,10 +3,16 @@
 Handle accessing remote hosts
 
 '''
+from __future__ import absolute_import
+try:
+    from builtins import str
+except ImportError:
+    # builtins not natively in python 2
+    pass
 
 import os
 import subprocess
-from util import log
+from .util import log
 import time
 
 ssh_command = "ssh -x"             # rely on it being in PATH
@@ -27,7 +33,7 @@ def command(cmdstr, retries=2):
         retries -= 1
         if status == 255: 
             if retries == 0:
-                raise RuntimeError,'SSH cmd "%s" failed.' % (cmdstr)
+                raise RuntimeError('SSH cmd "%s" failed.' % (cmdstr))
             else:
                 log.info('SSH cmd "%s" failed. Retrying in %s seconds.' % (cmdstr, str(sleepInterval) ) )
                 time.sleep(sleepInterval)
@@ -86,7 +92,7 @@ def mkdir(target_dir, host, user):
         #print "Trying to make local directory ", target_dir
         os.makedirs(target_dir)
         return 0,'',''
-    except Exception, err:
+    except Exception as err:
         return 1,'', err
 
 
