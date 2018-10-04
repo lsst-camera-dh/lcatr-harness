@@ -131,7 +131,7 @@ def module_name(test_name, test_version = ""):
 
     This defines the expected construction of environment module names.
     '''
-    return '-'.join(test_name, test_version)
+    return '-'.join((test_name, test_version))
 
 class Modules(object):
     '''
