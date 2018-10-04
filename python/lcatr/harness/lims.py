@@ -13,8 +13,12 @@ except ImportError:
     pass
 import time
 import json
-from urllib.parse import urlencode
-from urllib.request import urlopen
+try:
+    from urllib.parse import urlencode
+    from urllib.request import urlopen
+except ImportError:
+    from urllib import urlencode
+    from urllib2 import urlopen
 
 from .util import log
 

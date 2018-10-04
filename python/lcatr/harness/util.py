@@ -3,7 +3,10 @@
 General utility stuff
 '''
 from __future__ import print_function
-from builtins import object
+try:
+    from builtins import object
+except ImportError:
+    pass
 
 import logging
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
@@ -51,7 +54,11 @@ class MovableLogger(object):
     def move_lf(self, newpath):
         self.fh.close()
         self.l.removeHandler(self.fh)
-        shutil.move(self.filepath, newpath, copy_function=shutil.copy)
+        try:
+            shutil.move(self.filepath, newpath, copy_function=shutil.copy)
+        except TypeError:
+            # copy_function keyword not used in python 2
+            shutil.move(self.filepath, newpath)
         self.filepath = newpath
         newfh = logging.FileHandler(newpath)
         newfh.setFormatter(self.fmt)

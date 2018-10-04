@@ -4,7 +4,11 @@ Handle accessing remote hosts
 
 '''
 from __future__ import absolute_import
-from builtins import str
+try:
+    from builtins import str
+except ImportError:
+    # builtins not natively in python 2
+    pass
 
 import os
 import subprocess

@@ -4,8 +4,12 @@ LSST CCD Acceptance Testing Running of Jobs
 
 '''
 from __future__ import print_function
-from builtins import str
-from builtins import object
+try:
+    from builtins import str
+    from builtins import object
+except ImportError:
+    # builtins not natively in python 2
+    pass
 
 import os
 from lcatr.harness import remote, environment, lims, util

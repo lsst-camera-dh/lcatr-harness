@@ -259,11 +259,11 @@ class Modules(object):
             (' '.join(cmd), self.env['MODULEPATH'])
         log.info(msg)
         #for k,v in self.env.iteritems():
-        for k in self.env:
-            v = self.env[k]
-            if (type(k) != str) : print('Key type is %s' % type(k))
-            if (type(v) != str) : print('Value type is %s' % type(v))
-            assert type(k) == str and type(v) == str, 'bad: %s:%s'%(k,v)
+#        for k in self.env:
+#            v = self.env[k]
+#            if (type(k) != str) : print('Key type is %s' % type(k))
+#            if (type(v) != str) : print('Value type is %s' % type(v))
+#            assert type(k) == str and type(v) == str, 'bad: %s:%s'%(k,v)
         proc = subprocess.Popen(cmd,
                                 stdout = subprocess.PIPE,
                                 stderr = subprocess.PIPE,
