@@ -8,10 +8,8 @@ import sys
 import argparse
 from lcatr.harness import config
 from lcatr.harness import environment
-##from lcatr.harness import job as jobmod   # maybe don't need this
 from lcatr.harness import iterator as iteratormod
 
-###non_job_steps = ['help','dump']
 
 def do_help(cfg):
     print('usage: lcatr_auto [options]')
