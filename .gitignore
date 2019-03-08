@@ -1,6 +1,8 @@
 *~
 *.pyc
 *.py3
+*.py27
+*.hand_cvt
 *.html
 *.pdf
 *.tex
