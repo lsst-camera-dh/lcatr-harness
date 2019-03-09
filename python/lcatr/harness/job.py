@@ -323,11 +323,19 @@ class Job(object):
 
         self._check_archive()
 
+        if self.archive_exists():
+            msg = u'Archive destination directory already exists: %s' % dst
+            raise RuntimeError(msg)
+
+        # Under some circumstances, just do straight recursive copy to archive
+        if self._do_local_copy():  return
+
         to_archive = u'to_archive'
         src = self.cfg.subdir(u'stage') + u'/'
         # make a to-archive subdirectory.
         if os.path.exists(to_archive):
             raise RuntimeError(u'to-archive subdirectory in staging area already exists')
+
         os.makedirs(to_archive)
         new_src = src + to_archive + '/'
         # self.result is a list of dicts
@@ -354,11 +362,6 @@ class Job(object):
                 dst=""
         dst += self.cfg.subdir(u'archive') + u'/'
         
-        if self.archive_exists():
-            msg = u'Archive destination directory already exists: %s' % dst
-            raise RuntimeError(msg)
-
-
         util.log.info(u'Making archive directory "%s' % dst)
         ret = remote.mkdir(self.cfg.subdir(u'archive'),
                            self.cfg.archive_host, 
@@ -430,3 +433,30 @@ class Job(object):
 
             return remote.scp(src, dst)
 
+    # If a) archive_host == 'localhost' and b) there is an empty
+    # file in the staging directory named PRESERVE_SYMLINKS
+    # then just do cp -pr to archive without hunting through
+    # filerefs
+    # return True if conditions are satisfied and copy succeeds
+    #  else False
+    def _do_local_copy(self):
+        if self.cfg.archive_host != u'localhost': return False
+        special = u'PRESERVE_SYMLINKS'
+        if special not in os.listdir(): return False
+        if os.stat(special).st_size != 0: return False
+
+        # All conditions met.  Do the copy
+        dst = self.cfg.subdir(u'archive') + u'/'
+        util.log.info(u'Making archive directory "%s' % dst)
+        ret = remote.mkdir(self.cfg.subdir(u'archive'),
+                           self.cfg.archive_host, 
+                           self.cfg.archive_user)
+        
+        if ret[0]:
+            raise RuntimeError(u'Failed to make archive directory with %d:\nOUTPUT=\n%s\nERROR=\n%s' % ret)
+        util.log.info(u'Archiving to "%s' % (dst))
+
+        ret =  remote.cp(u'.', dst, recursive=True)
+        if ret[0]:
+            raise RuntimeError(u'Failed to make local recursive copy to archive')
+        return True
