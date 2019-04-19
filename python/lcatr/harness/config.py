@@ -74,6 +74,7 @@ class Config(object):
         'unit_type',    # type of unit (eg, CCD/RTM)
         'unit_id',      # The unique unit identifier
         'job_id',       # The unique job identifer
+        'runNumber',    # The unique run identifier (e.g. 123D)
         'lims_url',     # The URL of the LIMS/eTraveler web service
         'install_area', # base to where software is installed
 

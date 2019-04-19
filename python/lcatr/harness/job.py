@@ -75,6 +75,8 @@ class Job(object):
         self.cfg = cfg
         self.em = None
         self.lims = None
+        self.local_validate = False
+
         return
         
     def run(self, steps = None):
@@ -105,15 +107,18 @@ class Job(object):
                     if ret:
                         util.log.error(str(ret))
                         print(str(ret))
-                ix = steps.index(step)
-                if (ix > steps.index('configure')) and (ix < steps.index('purge')):
+
+                # I don't know why these steps are excluded.   The old code
+                # made a test which made no sense in the rerun case so
+                # I changed it to this.
+                if step not in ('configure', 'purge', 'ingest'):
                     self._archive_log()
                 raise
             else:
                 msg = u'Step %s completed' % step
                 print(msg)
                 util.log.info(msg)
-                if self.lims and stepped: 
+                if self.lims and stepped and (not self.local_validate or step != 'validate'):
                     ret = self.lims.update(step=stepped)
                     if ret:
                         util.log.error(str(ret))
@@ -129,6 +134,14 @@ class Job(object):
         
         # reregister
         self.lims = lims.Results(self.cfg.lims_url)
+        self.lims.set_jobid(self.cfg.job_id)
+
+        # In case only ingest is requested, we still need to do validate
+        # to generate results, but should skip the handshake with the
+        # Front-end
+        if steps[0] == 'ingest':
+            self.local_validate = True
+            steps = ['validate', 'ingest']
 
         #print 'Rerunning with steps: %s' % (', '.join(steps), )
         self.run(steps)
