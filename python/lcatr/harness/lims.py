@@ -140,6 +140,9 @@ class Results(object):
         self.prereq = prereq
         return jobid
 
+    def set_jobid(self, jobid):
+        self.jobid = jobid
+
     def reregister(self, jobid):
         """
         Reuse an existing job ID.  This will re-request and set the
