@@ -29,14 +29,11 @@ def dependency_glob(pattern, jobname = None, paths = None):
         paths = paths.split(':')
     else:
         try:
-            if isintance(paths, unicode):
+            if isinstance(paths, unicode):
                 paths = paths.split(':')
         except NameError:
             pass
 
-    #if isinstance(paths, (str,unicode)): 
-    #    paths = paths.split(':')
-        
     ret = list()
     for path in paths:
         if jobname and not '/'+jobname+'/' in path: # kind of a cheat
@@ -58,12 +55,11 @@ def dependency_jobids( ):
     # We need to assume formation of paths by JH does not change.  Relative to stage directory
     # that's (in eTraveler terminology)
     #    hardwareTypeName/lsstId/jobName/jobVersion/activityId
-    #if isinstance(paths, (str, unicode)):
     if isinstance(paths, str):
         paths = paths.split(':')
     else:
         try:
-            if isintance(paths, unicode):
+            if isinstance(paths, unicode):
                 paths = paths.split(':')
         except NameError:
             pass
