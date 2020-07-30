@@ -83,9 +83,17 @@ class Results(object):
         '''
         query = self.make_params(command,**kwds)
 
+        if command == 'ingest':
+            # format value of result keyword nicely
+            # Datatype should be a list of dicts
+            log.debug('per-file ingest information:')
+            for r in kwds['result']:
+                log.debug(str(r))
+                
+
         jdata = json.dumps(query)
         qdata = urlencode({'jsonObject':jdata})
-        log.debug('Query LIMS "%s" with json="%s", query="%s"' % (command, jdata, qdata))
+        log.debug('Query LIMS "%s" with json="%s"' % (command, jdata))
 
         url = self.lims_url + command
         
