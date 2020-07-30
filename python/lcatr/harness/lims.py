@@ -93,7 +93,6 @@ class Results(object):
 
         jdata = json.dumps(query)
         qdata = urlencode({'jsonObject':jdata})
-        #log.debug('Query LIMS "%s" with json="%s", query="%s"' % (command, jdata, qdata))
         log.debug('Query LIMS "%s" with json="%s"' % (command, jdata))
 
         url = self.lims_url + command
