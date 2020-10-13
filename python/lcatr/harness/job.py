@@ -12,6 +12,7 @@ except ImportError:
     pass
 
 import os
+import sys
 from lcatr.harness import remote, environment, lims, util
 import lcatr.schema
 
@@ -22,7 +23,13 @@ else:
     
 def log_and_terminal(out):
     print(out)
+    sys.stdout.flush()
     util.log.info(out)
+
+# Alternate, more general way to handle flush would be to pass execute
+# a flush routine, just as we pass it an out routine
+def terminal_flush():
+    sys.stdout.flush()
 
 class Job(object):
     '''
@@ -455,7 +462,7 @@ class Job(object):
     def _do_local_copy(self):
         if self.cfg.archive_host != u'localhost': return False
         special = u'PRESERVE_SYMLINKS'
-        if special not in os.listdir(): return False
+        if special not in os.listdir('.'): return False
         if os.stat(special).st_size != 0: return False
 
         # All conditions met.  Do the copy
