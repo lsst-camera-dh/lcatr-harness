@@ -26,10 +26,10 @@ def log_and_terminal(out):
     sys.stdout.flush()
     util.log.info(out)
 
-# Alternate, more general way to handle flush would be to pass execute
-# a flush routine, just as we pass it an out routine
-def terminal_flush():
-    sys.stdout.flush()
+# Alternate, more general way to handle flush would be to pass 
+# environment.execute a flush routine, just as we pass it an out routine
+# def terminal_flush():
+#    sys.stdout.flush()
 
 class Job(object):
     '''
